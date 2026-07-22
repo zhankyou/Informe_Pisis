@@ -73,19 +73,24 @@ def table_exists(table_name):
         return False
 
 def find_column(table_name, column_name):
-    """Verifica si una columna existe dentro de una tabla"""
+    """Verifica si una columna (o una de varias) existe dentro de una tabla. Retorna el nombre de la columna encontrada o False."""
+    # Soporte para iterar si se envía una lista de posibles nombres (Ej: ['eapb', 'eps', 'aseguradora'])
+    nombres = column_name if isinstance(column_name, (list, tuple)) else [column_name]
+    
     query = """
-        SELECT EXISTS (
-            SELECT FROM information_schema.columns 
-            WHERE table_schema = 'public' 
-            AND table_name = :table_name 
-            AND column_name = :column_name
-        )
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = :table_name 
+        AND column_name = :column_name
     """
     try:
         with engine.connect() as conn:
-            result = conn.execute(text(query), {"table_name": table_name, "column_name": column_name})
-            return result.scalar()
+            for nombre in nombres:
+                result = conn.execute(text(query), {"table_name": table_name, "column_name": nombre}).scalar()
+                if result:
+                    return result # Retorna el String (equivalente a True) para ensamblajes dinámicos
+            return False
     except Exception as e:
         print(f"[*] Error crítico en find_column: {e}")
         return False
