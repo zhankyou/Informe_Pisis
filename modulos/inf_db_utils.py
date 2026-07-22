@@ -10,7 +10,6 @@ def get_list(query, params=None):
                 result = conn.execute(text(query), params)
             else:
                 result = conn.execute(text(query))
-            # .mappings() es obligatorio en producción para evitar ValueError de Tuplas
             return [dict(row) for row in result.mappings().fetchall()]
     except Exception as e:
         print(f"[*] Error crítico en get_list: {e}")
@@ -41,4 +40,52 @@ def execute_query(query, params=None):
             return True
     except Exception as e:
         print(f"[*] Error crítico en execute_query: {e}")
+        return False
+
+def get_count(query, params=None):
+    """Ejecuta una consulta COUNT y retorna el valor escalar"""
+    try:
+        with engine.connect() as conn:
+            if params:
+                result = conn.execute(text(query), params)
+            else:
+                result = conn.execute(text(query))
+            return result.scalar() or 0
+    except Exception as e:
+        print(f"[*] Error crítico en get_count: {e}")
+        return 0
+
+def table_exists(table_name):
+    """Verifica si una tabla existe en la base de datos"""
+    query = """
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = :table_name
+        )
+    """
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text(query), {"table_name": table_name})
+            return result.scalar()
+    except Exception as e:
+        print(f"[*] Error crítico en table_exists: {e}")
+        return False
+
+def find_column(table_name, column_name):
+    """Verifica si una columna existe dentro de una tabla"""
+    query = """
+        SELECT EXISTS (
+            SELECT FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = :table_name 
+            AND column_name = :column_name
+        )
+    """
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text(query), {"table_name": table_name, "column_name": column_name})
+            return result.scalar()
+    except Exception as e:
+        print(f"[*] Error crítico en find_column: {e}")
         return False
