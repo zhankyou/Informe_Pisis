@@ -35,6 +35,7 @@ def get_engine(admin=False):
             if db_url.startswith("postgres://"):
                 db_url = db_url.replace("postgres://", "postgresql://", 1)
             
+            # Forzar cifrado SSL y codificación estricta requeridos por Aiven/Render
             if "?" not in db_url:
                 db_url += "?sslmode=require&client_encoding=utf8"
             else:
@@ -80,4 +81,5 @@ def get_engine(admin=False):
         isolation = "AUTOCOMMIT" if admin else "READ COMMITTED"
         return create_engine(cadena, isolation_level=isolation, pool_pre_ping=True)
 
+# Instancia global del motor con Pool gestionado
 engine = get_engine()
