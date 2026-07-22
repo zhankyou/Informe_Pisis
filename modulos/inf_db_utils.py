@@ -45,16 +45,17 @@ def get_count(query, params=None):
         return 0
 
 def table_exists(table_name):
-    """Verifica de forma agnóstica si una tabla existe en el esquema de la base de datos"""
+    """Verifica si una tabla existe en el esquema public de la base de datos"""
     query = """
         SELECT EXISTS (
             SELECT 1 FROM information_schema.tables 
-            WHERE table_name = :table_name
+            WHERE table_schema = 'public' 
+            AND table_name = :tname
         )
     """
     try:
         with engine.connect() as conn:
-            result = conn.execute(text(query), {"table_name": table_name})
+            result = conn.execute(text(query), {"tname": str(table_name).lower()})
             return bool(result.scalar())
     except Exception as e:
         print(f"[*] Error crítico en table_exists: {e}")
@@ -62,28 +63,26 @@ def table_exists(table_name):
 
 def find_column(table_name, column_name):
     """
-    Verifica si una columna (o una lista de posibles nombres) existe en una tabla.
-    Itera secuencialmente para evitar el error de casteo ARRAY de PostgreSQL.
-    Retorna el nombre exacto de la columna encontrada como String o False.
+    Solución definitiva: Extrae el mapa de columnas y evalúa la lista en memoria mediante Python.
+    Evita excepciones de casteo de tipos (ARRAY vs sql_identifier) en PostgreSQL.
     """
+    nombres = column_name if isinstance(column_name, (list, tuple)) else [column_name]
     query = """
         SELECT column_name 
         FROM information_schema.columns 
-        WHERE table_name = :table_name 
-        AND column_name = :col_name
+        WHERE table_schema = 'public' 
+        AND table_name = :tname
     """
     try:
-        # Aseguramos que siempre sea un iterable para evaluar
-        nombres = column_name if isinstance(column_name, (list, tuple)) else [column_name]
-        
         with engine.connect() as conn:
+            # Trae todas las columnas de la tabla a la memoria
+            result = conn.execute(text(query), {"tname": str(table_name).lower()})
+            columnas_db = [str(row[0]).lower() for row in result.fetchall()]
+            
+            # Realiza el match flexible en Python iterando sobre las posibles variaciones
             for nombre in nombres:
-                result = conn.execute(text(query), {
-                    "table_name": str(table_name), 
-                    "col_name": str(nombre)
-                }).scalar()
-                if result:
-                    return str(result)
+                if str(nombre).lower() in columnas_db:
+                    return str(nombre).lower()  # Retorna el nombre exacto de la columna en la BD
                     
         return False
     except Exception as e:
