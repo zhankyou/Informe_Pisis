@@ -2,47 +2,43 @@
 from sqlalchemy import text
 from modulos.db_config import engine
 
-def table_exists(t_name):
+def get_list(query, params=None):
+    """Ejecuta una consulta y retorna una lista de diccionarios (Compatible con SQLAlchemy 2.0+)"""
     try:
         with engine.connect() as conn:
-            return conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :t)"), {"t": t_name}).scalar()
-    except Exception:
-        return False
-
-def col_exists(t_name, c_name):
-    c_clean = c_name.strip('"')
-    try:
-        with engine.connect() as conn:
-            return conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = :t AND column_name = :c)"), {"t": t_name, "c": c_clean}).scalar()
-    except Exception:
-        return False
-
-def find_column(t_name, keywords):
-    """Búsqueda dinámica de la columna real basada en fragmentos clave."""
-    try:
-        with engine.connect() as conn:
-            cols = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = :t"), {"t": t_name}).fetchall()
-            col_names = [c[0] for c in cols]
-            for k in keywords:
-                for c in col_names:
-                    if k.lower() in c.lower():
-                        return f'"{c}"'
-    except Exception:
-        pass
-    return None
-
-def get_count(query):
-    try:
-        with engine.connect() as conn:
-            res = conn.execute(text(query)).scalar()
-            return res if res is not None else 0
-    except Exception:
-        return 0
-
-def get_list(query):
-    try:
-        with engine.connect() as conn:
-            res = conn.execute(text(query)).mappings().fetchall()
-            return [dict(r) for r in res]
-    except Exception:
+            if params:
+                result = conn.execute(text(query), params)
+            else:
+                result = conn.execute(text(query))
+            # .mappings() es obligatorio en producción para evitar ValueError de Tuplas
+            return [dict(row) for row in result.mappings().fetchall()]
+    except Exception as e:
+        print(f"[*] Error crítico en get_list: {e}")
         return []
+
+def get_record(query, params=None):
+    """Ejecuta una consulta y retorna un único diccionario"""
+    try:
+        with engine.connect() as conn:
+            if params:
+                result = conn.execute(text(query), params)
+            else:
+                result = conn.execute(text(query))
+            row = result.mappings().fetchone()
+            return dict(row) if row else None
+    except Exception as e:
+        print(f"[*] Error crítico en get_record: {e}")
+        return None
+
+def execute_query(query, params=None):
+    """Ejecuta operaciones DML (INSERT, UPDATE, DELETE)"""
+    try:
+        with engine.begin() as conn:
+            if params:
+                conn.execute(text(query), params)
+            else:
+                conn.execute(text(query))
+            return True
+    except Exception as e:
+        print(f"[*] Error crítico en execute_query: {e}")
+        return False
