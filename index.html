@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard General - INFORME APS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <script src="/static/js/layout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .view-container { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .section-title { font-size: 1.1rem; color: var(--navy); margin: 30px 0 15px; padding-bottom: 8px; border-bottom: 2px solid var(--border); font-weight: 700; display: flex; justify-content: space-between; align-items: center;}
+    .card { background: var(--surface); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+
+    .grid-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 15px; }
+    .stat-card { padding: 20px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc; display: flex; flex-direction: column; gap: 8px; border-top: 4px solid var(--teal); box-shadow: 0 2px 10px rgba(0,0,0,0.02);}
+    .stat-card h3 { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; font-weight: 700;}
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--navy); }
+    .stat-card .desc { font-size: 0.75rem; color: var(--muted); }
+
+    .res-panel { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 25px; background: white; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .res-header { background: var(--navy); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .res-body { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    .res-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; }
+    .res-item { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 10px; align-items: center; }
+
+    .chart-container { position: relative; height: 180px; width: 100%; margin-top: auto; padding-top: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: var(--bg); color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem; }
+
+    .badge { padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .badge.active { background: #e6f7f5; color: #008f7d; }
+    .badge.closed { background: #fde8e8; color: #c62828; }
+    .badge.warning { background: #fff3cd; color: #f39c12; }
+
+    .btn { background: var(--navy); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+    .btn-action { background: var(--teal); }
+    .btn-danger { background: #e53935; }
+
+    /* Módulo PISIS Avanzado */
+    .pisis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-top: 15px; }
+    .pisis-card { background: white; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02); display: flex; flex-direction: column; }
+    .pisis-header { padding: 15px 20px; border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .pisis-header.pob { background: linear-gradient(90deg, rgba(52, 152, 219, 0.05) 0%, transparent 100%); border-left: 5px solid #3498db; }
+    .pisis-header.fin { background: linear-gradient(90deg, rgba(22, 160, 133, 0.05) 0%, transparent 100%); border-left: 5px solid #16a085; }
+    .pisis-header h4 { font-size: 0.95rem; color: var(--navy); display: flex; align-items: center; gap: 8px; margin: 0; }
+    .pisis-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem; }
+    .pisis-row { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid #f0f4fa; }
+    .pisis-row span:first-child { color: var(--muted); font-weight: 500; }
+    .pisis-row span:last-child { color: var(--navy); font-weight: 700; text-align: right; }
+    .pisis-filename { font-family: 'Courier New', Courier, monospace; background: #1e293b; color: #38bdf8; padding: 10px; border-radius: 6px; font-size: 0.75rem; word-break: break-all; margin-top: 5px; }
+    .pisis-stepper { display: flex; gap: 5px; margin-top: auto; padding-top: 10px; }
+    .pisis-step { flex: 1; text-align: center; font-size: 0.65rem; font-weight: 700; padding: 6px; border-radius: 4px; background: var(--bg); color: var(--muted); text-transform: uppercase; border: 1px solid var(--border);}
+    .pisis-step.done { background: #e6f7f5; color: #008f7d; border-color: #00b09b;}
+  </style>
+</head>
+<body>
+
+  <app-sidebar active-menu="dashboard"></app-sidebar>
+
+  <main class="main-content">
+    <app-topbar titulo="Módulo: Dashboard General"></app-topbar>
+
+    <div class="view-container">
+      <div class="module-header">
+        <div>
+          <h2>Panel de Control Global</h2>
+          <p>Métricas operativas, administración presupuestal e historial de reportes institucionales PISIS.</p>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span>📍 Resumen Operativo (Cronograma EBS)</span>
+        <span style="font-size: 0.8rem; color: var(--muted); font-weight: 500;" id="fecha-operativa-lbl"></span>
+      </div>
+      <div class="grid-dashboard" id="grid-cronograma" style="margin-bottom: 25px;">
+        <div class="stat-card">
+          <h3>Territorios Asignados (Mes)</h3>
+          <span class="value" id="stat-territorios">0</span>
+          <span class="desc">Programación General Mensual</span>
+        </div>
+        <div class="stat-card" style="border-top-color: #3498db;">
+          <h3>Duplas en Terreno (Hoy)</h3>
+          <span class="value" id="stat-duplas">0</span>
+          <span class="desc">Vacunadores y Anotadores activos</span>
+        </div>
+        <div class="stat-card" style="border-top-color: #9b59b6;">
+          <h3>Actividades Programadas (Hoy)</h3>
+          <span class="value" id="stat-actividades">0</span>
+          <span class="desc">Intervenciones en cronograma diario</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="color: var(--navy); font-size: 1.1rem;">💰 Gestión de Resoluciones SER124</h3>
+          <button id="btn-nueva-res" class="btn btn-action" style="display:none;" onclick="window.location.href='/financiero'">+ Nueva Resolución</button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr><th>ID Recurso</th><th>Descripción Normativa</th><th>Estado</th><th id="th-acciones" style="display:none;">Acciones Administrativas</th></tr>
+            </thead>
+            <tbody id="tabla-resoluciones"><tr><td colspan="4">Cargando resoluciones...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title">📊 Resumen de Ejecución y Auditoría Financiera</div>
+      <div id="grid-ejecucion"></div>
+
+      <!-- Historial de PISIS Integrado Gráfico -->
+      <div class="section-title">📁 Estado y Reportes Archivos PISIS (SER124DREC y APS124CCFP)</div>
+      <div class="pisis-grid" id="grid-pisis">
+        <!-- Renderizado desde JavaScript -->
+        <p style="color: var(--muted); padding: 15px;">Cargando estado de anexos técnicos...</p>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/static/js/main_dashboard.js"></script>
+</body>
+</html>

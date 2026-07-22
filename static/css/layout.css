@@ -1,0 +1,71 @@
+:root { --navy: #0a1f3d; --teal: #00b09b; --bg: #f0f4fa; --surface: #ffffff; --text: #1a2840; --muted: #5d7290; --border: #dde4ef; --sidebar-w: 260px; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sora', sans-serif; }
+body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+/* Layout Base */
+.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.view-container { flex: 1; padding: 25px; overflow-y: auto; position: relative; }
+.module-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+.module-header h2 { font-size: 1.5rem; color: var(--navy); }
+.module-header p { font-size: 0.85rem; color: var(--muted); margin-top: 5px; }
+
+/* Componentes Inyectados (Sidebar/Topbar) */
+app-sidebar { display: block; width: var(--sidebar-w); background: var(--navy); color: white; height: 100vh; overflow-y: auto; z-index: 100; }
+app-topbar { display: block; background: var(--surface); border-bottom: 1px solid var(--border); z-index: 99; }
+
+.sidebar-internal { display: flex; flex-direction: column; height: 100%; }
+.brand { padding: 20px; font-weight: 700; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+.nav-menu { padding: 15px 0; flex: 1; }
+.nav-item { padding: 12px 20px; cursor: default; font-size: 0.9rem; font-weight: 500; color: rgba(255,255,255,0.7); display: flex; justify-content: space-between; text-decoration: none; transition: 0.2s;}
+a.nav-item { cursor: pointer; }
+.nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
+.nav-item.active { color: var(--teal); border-right: 4px solid var(--teal); background: rgba(0, 176, 155, 0.1); }
+.sub-item { padding: 10px 20px 10px 40px; font-size: 0.8rem; cursor: pointer; color: rgba(255,255,255,0.6); display: block; text-decoration: none; transition: 0.2s; }
+.sub-item:hover { color: var(--teal); }
+.sub-item.active { color: var(--teal); font-weight: 600; }
+.sub-item-child { padding: 8px 20px 8px 55px; font-size: 0.75rem; cursor: pointer; color: rgba(255,255,255,0.5); display: block; text-decoration: none; transition: 0.2s; }
+.sub-item-child:hover { color: var(--teal); }
+.sub-item-child.active { color: var(--teal); font-weight: 600; }
+
+.topbar-internal { padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+.btn-logout { background: #e53935; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: 0.2s; margin-left: 15px; }
+.btn-logout:hover { background: #c62828; }
+
+/* === SOBRESCRITURA DE ALERTA NATIVA (CARD DIFUMINADA) === */
+.custom-alert-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px); /* Efecto difuminado */
+    -webkit-backdrop-filter: blur(4px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 99999;
+    opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s;
+}
+.custom-alert-overlay.show { opacity: 1; visibility: visible; }
+
+.custom-alert-box {
+    background: #202020; /* Color oscuro */
+    color: #ffffff;
+    padding: 20px 25px;
+    border-radius: 12px;
+    width: 380px; max-width: 90%;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    transform: scale(0.95); transition: transform 0.2s ease;
+    font-family: 'Segoe UI', Roboto, 'Sora', sans-serif;
+}
+.custom-alert-overlay.show .custom-alert-box { transform: scale(1); }
+
+.custom-alert-title { font-size: 1rem; font-weight: 700; margin-bottom: 15px; }
+.custom-alert-body { font-size: 0.9rem; margin-bottom: 25px; line-height: 1.4; color: #e0e0e0;}
+.custom-alert-btn-wrapper { text-align: right; }
+
+.custom-alert-btn {
+    background: #eadddd; color: #202020;
+    border: 2px solid #ffffff;
+    outline: 2px solid #dcbaba;
+    outline-offset: -4px;
+    padding: 8px 24px; border-radius: 25px;
+    font-weight: 600; cursor: pointer; font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+.custom-alert-btn:hover { background: #dcbaba; outline-color: #c9a3a3; }

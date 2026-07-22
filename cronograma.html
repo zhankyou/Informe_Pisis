@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Cronograma - INFORME APS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <script src="/static/js/layout.js"></script>
+  <style>
+    .card { background: var(--surface); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .tabs-nav { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+    .tab-btn { padding: 10px 15px; border: none; background: none; font-size: 0.85rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .btn { background: var(--navy); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+    .btn-action { background: #1e3a8a; }
+    .btn-success { background: #16a085; }
+    .btn-danger { background: #e53935; }
+    .btn-edit { background: #8e44ad; }
+
+    .table-container { overflow-x: auto; margin-top: 15px; border: 1px solid var(--border); border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.75rem; text-transform: uppercase; }
+    th, td { border: 1px solid var(--border); padding: 8px; text-align: center; vertical-align: middle; }
+    .th-dark-blue { background-color: #1e3a8a; color: white; font-weight: 700; letter-spacing: 1px; }
+    .th-blue { background-color: #dbeafe; color: #1e3a8a; font-weight: 700; }
+    .th-yellow { background-color: #fef08a; color: #854d0e; font-weight: 700; font-size: 1rem; }
+    .th-pink { background-color: #ffedd5; color: #000; font-weight: 700; text-align: left !important; }
+    tbody tr:hover { background-color: #f8fafc; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full-width { grid-column: 1 / -1; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--navy); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .form-group input, .form-group select, .form-group textarea { padding: 8px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-family: 'Sora', sans-serif;}
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--teal); }
+    .form-group textarea.uppercase-text { text-transform: uppercase; }
+
+    .dias-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+    .dias-grid label { background: var(--bg); padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; font-size: 0.75rem; color: var(--navy); }
+    .dias-grid input { margin-right: 5px; }
+
+    .btn-icon { background: none; border: none; font-size: 1rem; cursor: pointer; padding: 5px; border-radius: 4px; transition: 0.2s; }
+    .btn-icon:hover { background: #dde4ef; }
+
+    .cfg-section { padding: 15px; background: white; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; }
+    .cfg-section h5 { color: var(--navy); border-bottom: 1px dashed var(--border); padding-bottom: 5px; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;}
+  </style>
+</head>
+<body>
+
+  <app-sidebar active-menu="cronograma"></app-sidebar>
+
+  <main class="main-content">
+    <app-topbar titulo="Módulo: Cronograma Operativo"></app-topbar>
+
+    <div class="view-container">
+      <div class="module-header">
+        <div>
+          <h2>Cronograma de Actividades (EBS)</h2>
+          <p>Planificación territorial, programación de recepción y horario de vacunación.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tabs-nav">
+          <button class="tab-btn active" onclick="switchTab('tab-mensual', this)">Cronograma Mensual (General)</button>
+          <button class="tab-btn" onclick="switchTab('tab-diario', this)">Vacunación APS (Diario)</button>
+        </div>
+
+        <!-- VISTA MENSUAL -->
+        <div id="tab-mensual" class="tab-pane active">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label style="font-weight: 700; color: var(--navy); font-size: 0.85rem;">Mes Operativo:</label>
+              <select id="filtro-mes" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;"></select>
+              <button class="btn btn-action" onclick="cargarMensual()">Consultar</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-action" id="btn-prog-mensual" style="display: none;" onclick="abrirFormMensual()">+ Programar Territorio</button>
+              <button class="btn btn-danger" onclick="exportarPDFMensual()">Exportar PDF</button>
+            </div>
+          </div>
+
+          <div id="form-mensual" style="display: none; background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h4 id="lbl-form-mensual" style="margin-bottom: 15px; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 8px;">Asignación Mensual a Territorios</h4>
+            <form onsubmit="guardarMensual(event)">
+              <div class="grid">
+                <div class="form-group"><label>Mes de Asignación</label><input type="text" id="f-mes-display" readonly style="background: #f5f7fa;"><input type="hidden" name="mes" id="f-mes"></div>
+                <div class="form-group">
+                  <label>Actividad</label>
+                  <select name="actividad" id="f-actividad" multiple required style="height: 60px;">
+                    <option value="REVISIÓN DE ENTREGABLES">REVISIÓN DE ENTREGABLES</option>
+                    <option value="RECEPCIÓN DE ENTREGABLES">RECEPCIÓN DE ENTREGABLES</option>
+                  </select>
+                </div>
+                <div class="form-group"><label>Equipo (No.)</label><select name="equipo" id="f-equipo" required></select></div>
+                <div class="form-group"><label>Territorio (No.)</label><select name="territorio" id="f-territorio" required></select></div>
+                <div class="form-group"><label>Hora Inicio</label><input type="time" name="hora_inicio" id="f-hora-ini" required></div>
+                <div class="form-group"><label>Hora Fin</label><input type="time" name="hora_fin" id="f-hora-fin" required></div>
+              </div>
+              <div class="form-group" style="margin-top: 15px;"><label>Días asignados en el mes</label><div class="dias-grid" id="contenedor-dias"></div></div>
+              <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                <button type="button" class="btn" style="background: var(--muted);" onclick="document.getElementById('form-mensual').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn btn-success">Guardar Programación</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="table-container">
+            <table><thead id="thead-mensual"></thead><tbody id="tabla-mensual"><tr><td colspan="35" style="color: var(--muted); padding: 20px;">Seleccione un mes y presione consultar.</td></tr></tbody></table>
+          </div>
+        </div>
+
+        <!-- VISTA DIARIA -->
+        <div id="tab-diario" class="tab-pane">
+          <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label style="font-weight: 700; color: var(--navy); font-size: 0.85rem;">Fecha Operativa:</label>
+              <input type="date" id="filtro-fecha" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+              <button class="btn btn-action" onclick="cargarDiario()">Consultar</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <!-- NUEVO: Botón e input para duplicar jornada -->
+              <div id="btn-group-duplicar" style="display: none; align-items: center; gap: 5px; border: 1px solid var(--border); padding: 4px; border-radius: 6px; background: #fff;">
+                  <span style="font-size: 0.7rem; color: var(--navy); font-weight: bold; margin-left: 5px;">Copiar de:</span>
+                  <input type="date" id="fecha-origen-copy" style="padding: 4px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.75rem;">
+                  <button class="btn btn-edit" style="padding: 5px 10px; background: #f39c12;" onclick="duplicarDiario()">🔁 Clonar</button>
+              </div>
+
+              <button class="btn btn-edit" id="btn-edit-txt" style="display: none;" onclick="abrirFormConfig()">✏️ Editar Textos Cierre</button>
+              <button class="btn btn-action" id="btn-add-dupla" style="display: none;" onclick="abrirFormDupla(null)">+ Asignar Dupla</button>
+              <button class="btn btn-danger" onclick="exportarPDFDiario()">Exportar PDF</button>
+            </div>
+          </div>
+
+          <!-- FORM CONFIG DIARIO DINÁMICO -->
+          <div id="form-config-diario" style="display: none; background: #fff5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed #c0392b;">
+            <h4 style="margin-bottom: 15px; color: #c0392b; border-bottom: 1px solid #e6b0aa; padding-bottom: 8px;">Configuración de Textos y Asignaciones Finales del Día</h4>
+            <form onsubmit="guardarConfigDiario(event)">
+              <div class="cfg-section">
+                  <h5>Personal Entrega y Recibido de Biológico (CEMI) <button type="button" class="btn btn-action" style="padding:2px 8px; font-size: 0.7rem;" onclick="addCampoConfig('cemi', 5)">+ Añadir (Máx 5)</button></h5>
+                  <div id="container-cemi" style="display:flex; flex-direction:column; gap:8px;"></div>
+              </div>
+
+              <div class="cfg-section">
+                  <h5>Archivo y PAIWEB en Oficina Administrativa APS</h5>
+                  <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                      <div class="form-group"><label>Hora Inicio</label><input type="time" id="cfg-arch-ini" required></div>
+                      <div class="form-group"><label>Hora Finalización</label><input type="time" id="cfg-arch-fin" required></div>
+                  </div>
+                  <div class="grid" style="grid-template-columns: 1fr; margin-top: 15px;">
+                      <div class="form-group full-width" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid var(--border);">
+                          <label>1. Papelería <button type="button" class="btn btn-action" style="padding:2px 8px; font-size:0.7rem;" onclick="addCampoConfig('papeleria', 5)">+ Añadir (Máx 5)</button></label>
+                          <div id="container-papeleria" style="display:flex; flex-direction:column; gap:8px;"></div>
+                      </div>
+                      <div class="form-group full-width" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid var(--border);">
+                          <label>2. Cargue a PAIWEB <button type="button" class="btn btn-action" style="padding:2px 8px; font-size:0.7rem;" onclick="addCampoConfig('cargue', 5)">+ Añadir (Máx 5)</button></label>
+                          <div id="container-cargue" style="display:flex; flex-direction:column; gap:8px;"></div>
+                      </div>
+                      <div class="form-group full-width" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid var(--border);">
+                          <label>3. Validación PAIWEB <button type="button" class="btn btn-action" style="padding:2px 8px; font-size:0.7rem;" onclick="addCampoConfig('validacion', 5)">+ Añadir (Máx 5)</button></label>
+                          <div id="container-validacion" style="display:flex; flex-direction:column; gap:8px;"></div>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="cfg-section" style="margin-bottom: 0;">
+                <div class="form-group">
+                    <label style="color: #c0392b;">Observaciones Generales de la Fecha</label>
+                    <textarea id="cfg-obs" rows="4" class="uppercase-text" required></textarea>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+                <button type="button" class="btn" style="background: var(--muted);" onclick="document.getElementById('form-config-diario').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn btn-danger">Guardar Textos</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- FORM DUPLA MULTI-PERSONAL -->
+          <div id="form-vacunacion" style="display: none; background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h4 id="lbl-form-dupla" style="margin-bottom: 15px; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 8px;">Asignación Operativa (Duplas)</h4>
+            <form id="frm-dupla" onsubmit="guardarDiario(event)">
+              <input type="hidden" id="v-id">
+              <div class="grid">
+                <div class="form-group"><label>Fecha</label><input type="date" id="v-fecha" readonly required></div>
+                <div class="form-group"><label>Dupla (No.)</label><input type="number" id="v-dupla" required></div>
+                <div class="form-group"><label>Lugar Vacunación</label><input type="text" id="v-lugar" class="uppercase-text" required></div>
+                <div class="form-group"><label>Hora Inicio</label><input type="time" id="v-h-ini" required></div>
+                <div class="form-group"><label>Hora Fin</label><input type="time" id="v-h-fin" required></div>
+              </div>
+
+              <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                  <div class="form-group full-width" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid var(--border);">
+                      <label>Vacunadores (Máx 5) <button type="button" class="btn btn-action" style="padding:2px 8px;" onclick="addCampoPersonal('vacunador', 5)">+ Añadir</button></label>
+                      <div id="container-vacunador" style="display:flex; flex-direction:column; gap:8px;"></div>
+                  </div>
+                  <div class="form-group full-width" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid var(--border);">
+                      <label>Anotadores (Máx 5) <button type="button" class="btn btn-action" style="padding:2px 8px;" onclick="addCampoPersonal('anotador', 5)">+ Añadir</button></label>
+                      <div id="container-anotador" style="display:flex; flex-direction:column; gap:8px;"></div>
+                  </div>
+                  <div class="form-group full-width" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid var(--border);">
+                      <label>Profesional Valoración (Máx 5) <button type="button" class="btn btn-action" style="padding:2px 8px;" onclick="addCampoPersonal('profesional', 5)">+ Añadir</button></label>
+                      <div id="container-profesional" style="display:flex; flex-direction:column; gap:8px;"></div>
+                  </div>
+                  <div class="form-group full-width" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid var(--border);">
+                      <label>Resp. Desistimientos (Máx 5) <button type="button" class="btn btn-action" style="padding:2px 8px;" onclick="addCampoPersonal('desistimientos', 5)">+ Añadir</button></label>
+                      <div id="container-desistimientos" style="display:flex; flex-direction:column; gap:8px;"></div>
+                  </div>
+              </div>
+
+              <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                <button type="button" class="btn" style="background: var(--muted);" onclick="document.getElementById('form-vacunacion').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn btn-success">Guardar Asignación</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th colspan="12" class="th-dark-blue" style="font-size: 1rem;">CRONOGRAMA VACUNACIÓN APS</th></tr>
+                <tr><th colspan="12" class="th-yellow" id="lbl-fecha-tabla">18/07/2026</th></tr>
+                <tr><th colspan="12" class="th-pink" style="padding-left: 15px;" id="lbl-entrega-biologico">ENTREGA Y RECIBIDO DE BIOLÓGICO EN CEMI</th></tr>
+                <tr id="tr-entrega-nombres"></tr>
+                <tr class="th-dark-blue" style="font-size: 0.65rem;">
+                  <th>DUPLA</th><th>LUGAR VACUNACIÓN</th><th>HORARIO</th><th>VACUNADORES</th><th>TELÉFONOS</th><th>ANOTADORES</th><th>TELÉFONOS</th><th>PROFESIONALES VALORACIÓN</th><th>TELÉFONOS</th><th>DESISTIMIENTOS BARRIDO</th><th>TELÉFONOS</th><th>ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-diario">
+                <tr><td colspan="12" style="color: var(--muted); padding: 20px;">Seleccione una fecha y presione consultar.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/main_cronograma.js"></script>
+  <script src="/static/js/mensual.js"></script>
+  <script src="/static/js/diario_vacunacion.js"></script>
+</body>
+</html>

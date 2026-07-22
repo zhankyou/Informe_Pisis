@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>
+    if (localStorage.getItem('isAdmin') !== 'true') {
+        window.location.replace('/login');
+    }
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Poblacional SI-APS - INFORME APS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <script src="/static/js/layout.js"></script>
+  <style>
+    .card { background: var(--surface); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .grid-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 15px; }
+    .res-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; }
+    .res-box h4 { font-size: 0.85rem; color: var(--navy); text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
+    .res-item { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 10px; align-items: center; }
+    .btn { background: var(--navy); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .btn-export { background: var(--teal); }
+    .btn-action { background: #f39c12; }
+    .btn-upload { background: #34495e; color: white; border: 1px solid var(--border); font-size: 0.8rem; padding: 8px 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+    .form-group input, .form-group select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; font-family: 'Sora', sans-serif;}
+  </style>
+</head>
+<body>
+
+  <app-sidebar active-menu="poblacional"></app-sidebar>
+
+  <main class="main-content">
+    <app-topbar titulo="Módulo: Poblacional (SI-APS)"></app-topbar>
+
+    <div class="view-container">
+      <div class="module-header">
+        <div>
+          <h2>Consolidado Poblacional APS124CCFP</h2>
+          <p>Motor de validación, limpieza ETL y empaquetado del Anexo Técnico PISIS.</p>
+        </div>
+      </div>
+
+      <!-- CARGA DE ARCHIVOS -->
+      <div class="card" style="background: #e6f7f5; border-color: var(--teal);">
+        <h3 style="color: var(--navy); margin-bottom: 5px;">📥 Carga de Datos Crudos (Epicollect)</h3>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 15px;">Suba los archivos exportados de Epicollect (.csv o .xlsx) para alimentar las tablas temporales del motor ETL.</p>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+          <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); flex: 1;">
+            <h4 style="margin-bottom: 10px; color: var(--navy); font-size: 0.9rem;">1. Viviendas y Familias (Epicollect)</h4>
+            <input type="file" id="file-familias" accept=".csv, .xlsx, .xls" style="font-size: 0.8rem;">
+            <button class="btn btn-upload" onclick="subirEpicollect('familias')">Cargar Archivo</button>
+          </div>
+          <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); flex: 1;">
+            <h4 style="margin-bottom: 10px; color: var(--navy); font-size: 0.9rem;">2. Integrantes y Salud (Epicollect)</h4>
+            <input type="file" id="file-integrantes" accept=".csv, .xlsx, .xls" style="font-size: 0.8rem;">
+            <button class="btn btn-upload" onclick="subirEpicollect('integrantes')">Cargar Archivo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONITOR ETL -->
+      <div class="card">
+        <h3 style="color: var(--navy); margin-bottom: 5px;">📡 Sincronización ETL (Epicollect ➔ SI-APS PISIS)</h3>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 15px;">Monitor de transformación y volcado de formularios a estructura rígida PISIS (Tipos 2 y 3).</p>
+
+        <div class="grid-dashboard">
+          <div class="res-box" style="border-top: 3px solid #3498db;">
+            <h4>Viviendas y Familias (Tipo 2)</h4>
+            <div class="res-item"><span style="color:var(--muted)">Total BD (Epicollect):</span> <strong id="fam-epi">0</strong></div>
+            <div class="res-item"><span style="color:var(--muted)">Sincronizado PISIS:</span> <strong id="fam-sinc" style="color: var(--teal);">0</strong></div>
+            <div class="res-item" style="border-top: 1px dashed var(--border); padding-top: 10px;"><span style="color:var(--muted)">Pendientes:</span> <strong id="fam-pend" style="color: #e53935;">0</strong></div>
+            <div style="width: 100%; background: #dde4ef; border-radius: 4px; height: 8px; margin-top: 10px; overflow: hidden;"><div id="fam-bar" style="height: 100%; background: var(--teal); width: 0%;"></div></div>
+          </div>
+
+          <div class="res-box" style="border-top: 3px solid #9b59b6;">
+            <h4>Integrantes y Salud (Tipo 3)</h4>
+            <div class="res-item"><span style="color:var(--muted)">Total BD (Epicollect):</span> <strong id="int-epi">0</strong></div>
+            <div class="res-item"><span style="color:var(--muted)">Sincronizado PISIS:</span> <strong id="int-sinc" style="color: var(--teal);">0</strong></div>
+            <div class="res-item" style="border-top: 1px dashed var(--border); padding-top: 10px;"><span style="color:var(--muted)">Pendientes:</span> <strong id="int-pend" style="color: #e53935;">0</strong></div>
+            <div style="width: 100%; background: #dde4ef; border-radius: 4px; height: 8px; margin-top: 10px; overflow: hidden;"><div id="int-bar" style="height: 100%; background: var(--teal); width: 0%;"></div></div>
+          </div>
+        </div>
+
+        <div id="aviso-omitidos" style="display:none; background:#fff3cd; border:1px solid #f39c12; border-radius:8px; padding:12px 15px; font-size:0.8rem; color:#7a5200; margin-top:15px;"></div>
+
+        <div style="text-align: right; margin-top: 15px;">
+          <button class="btn btn-upload" onclick="verDiagnostico()">🔍 Diagnóstico de columnas</button>
+          <button id="btn-sync" class="btn btn-action" onclick="ejecutarSincronizacion()">🔄 Ejecutar Motor ETL</button>
+        </div>
+      </div>
+
+      <!-- DESCARGA -->
+      <div class="card" style="border: 1px solid var(--navy);">
+        <h3 style="color: var(--navy); margin-bottom: 5px;">📤 Exportación y Generación de Archivo PISIS</h3>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 15px;">El sistema autogenerará el Registro de Control (Tipo 1) totalizando las familias e integrantes sincronizados.</p>
+        <form action="/api/exportar/aps124ccfp" method="GET">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div class="form-group"><label>Tipo ID Entidad</label><select name="tipo_id" required><option value="NI">NI - NIT</option><option value="MU">MU - Municipio</option><option value="DE">DE - Departamento</option><option value="DI">DI - Distrito</option></select></div>
+            <div class="form-group"><label>Núm ID Entidad</label><input type="text" name="num_id" value="822002459" maxlength="12" readonly required></div>
+            <div class="form-group"><label>Fecha Inicial (Periodo Reportado)</label><input type="date" name="fecha_inicial" required></div>
+            <div class="form-group"><label>Fecha Final (Fecha de Corte)</label><input type="date" name="fecha_final" required></div>
+          </div>
+          <button type="submit" class="btn btn-export" style="margin-top: 20px; width: 100%;">📥 Descargar Consolidado PISIS (.TXT)</button>
+        </form>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    async function subirEpicollect(tipo) {
+      const fileInput = document.getElementById(`file-${tipo}`);
+      if (!fileInput.files.length) return alert("Seleccione un archivo primero.");
+      const formData = new FormData(); formData.append('archivo', fileInput.files[0]);
+      try {
+        const res = await fetch(`/api/epicollect/upload/${tipo}`, { method: 'POST', body: formData });
+        const json = await res.json();
+        alert(json.status === 'success' ? "✅ " + json.msg : "❌ Error: " + json.msg);
+        if(json.status === 'success') { fileInput.value = ''; cargarMetricasPoblacional(); }
+      } catch (e) { alert("❌ Fallo subiendo archivo."); }
+    }
+
+    async function cargarMetricasPoblacional() {
+      try {
+        const res = await fetch('/api/dashboard/poblacional');
+        const json = await res.json();
+        if (json.status === 'success') {
+          const { familias: f, integrantes: i } = json.data;
+          document.getElementById('fam-epi').textContent = f.epicollect.toLocaleString();
+          document.getElementById('fam-sinc').textContent = f.sincronizadas.toLocaleString();
+          document.getElementById('fam-pend').textContent = f.pendientes.toLocaleString();
+          document.getElementById('fam-bar').style.width = f.epicollect > 0 ? `${(f.sincronizadas / f.epicollect) * 100}%` : '0%';
+
+          document.getElementById('int-epi').textContent = i.epicollect.toLocaleString();
+          document.getElementById('int-sinc').textContent = i.sincronizadas.toLocaleString();
+          document.getElementById('int-pend').textContent = i.pendientes.toLocaleString();
+          document.getElementById('int-bar').style.width = i.epicollect > 0 ? `${(i.sincronizadas / i.epicollect) * 100}%` : '0%';
+        }
+      } catch (e) { console.error("Error métricas:", e); }
+    }
+
+    async function ejecutarSincronizacion() {
+      const btn = document.getElementById('btn-sync'); const aviso = document.getElementById('aviso-omitidos');
+      if(!confirm("⏳ ¿Iniciar proceso ETL?")) return;
+      btn.textContent = "⏳ Procesando ETL..."; btn.disabled = true; aviso.style.display = 'none';
+      try {
+        const res = await fetch('/api/sincronizar_epicollect', { method: 'POST' });
+        const data = await res.json();
+        alert(data.status === 'success' ? "✅ " + data.msg : "❌ Error: " + data.msg);
+        if (data.omitidos && Object.keys(data.omitidos).length > 0) {
+          aviso.style.display = 'block';
+          aviso.innerHTML = "⚠️ Se omitieron filas por falta de identificador en: " + Object.entries(data.omitidos).map(([t, n]) => `<b>${t}</b>: ${n}`).join(' · ') + " — usa el botón «Diagnóstico de columnas».";
+        }
+      } catch (e) { alert("❌ Fallo de conexión o Timeout."); } finally {
+        btn.textContent = "🔄 Ejecutar Motor ETL"; btn.disabled = false; cargarMetricasPoblacional();
+      }
+    }
+
+    async function verDiagnostico() {
+      try {
+        const res = await fetch('/api/debug/epicollect_columnas');
+        const json = await res.json();
+        if (json.status !== 'success') return alert("❌ Error: " + json.msg);
+        let resumen = "";
+        for (const [tabla, info] of Object.entries(json.data)) {
+          if (!info.existe) { resumen += `• ${tabla}: no existe en la BD\n`; continue; }
+          resumen += `• ${tabla} (${info.total_filas} filas): ` + (info.se_perderia_por_falta_de_id ? "❌ falta id de relación" : "✅ IDs detectados OK") + "\n";
+        }
+        alert("Diagnóstico:\n\n" + resumen + "\nRevise la consola del navegador."); console.log("Diagnóstico detallado Epicollect:", json.data);
+      } catch (e) { alert("❌ No se pudo obtener el diagnóstico."); }
+    }
+    document.addEventListener('DOMContentLoaded', cargarMetricasPoblacional);
+  </script>
+</body>
+</html>

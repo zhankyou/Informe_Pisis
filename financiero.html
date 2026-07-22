@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>
+    if (localStorage.getItem('isAdmin') !== 'true') {
+        window.location.replace('/login');
+    }
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Financiero - INFORME APS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <script src="/static/js/layout.js"></script>
+  <style>
+    .card { background: var(--surface); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .tabs-nav { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+    .tab-btn { padding: 10px 15px; border: none; background: none; font-size: 0.8rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full-width { grid-column: 1 / -1; }
+    label { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    input, select, textarea { padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; outline: none; font-size: 0.9rem; font-family: 'Sora', sans-serif;}
+    input:focus, select:focus, textarea:focus { border-color: var(--teal); }
+    input[readonly] { background-color: #f5f7fa; cursor: not-allowed; color: var(--muted); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .btn { background: var(--navy); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+    .btn:hover { background: #002244; }
+    .btn-export { background: var(--teal); }
+    .btn-export:hover { background: #008f7d; }
+    .btn-excel { background: #1d6f42; }
+    .btn-excel:hover { background: #145230; }
+    .btn-txt { background: #455a64; }
+    .btn-txt:hover { background: #263238; }
+    .btn-download-ex { background: #0277bd; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .btn-download-tx { background: #607d8b; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .action-group { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-content { background: var(--surface); width: 95%; max-width: 1200px; max-height: 90vh; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+    .modal-header h3 { color: var(--navy); }
+    .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); margin-left: 15px;}
+
+    .table-preview-container { flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+    .table-preview { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .table-preview th, .table-preview td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .table-preview th { background: #f8fafc; position: sticky; top: 0; color: var(--navy); }
+  </style>
+</head>
+<body>
+
+  <app-sidebar active-menu="financiero"></app-sidebar>
+
+  <main class="main-content">
+    <app-topbar titulo="Módulo: Financiero (SER124)"></app-topbar>
+
+    <div class="view-container">
+      <div class="module-header">
+        <div>
+          <h2>Consolidado Financiero SER124DREC</h2>
+          <p>Ejecución de recursos de transferencias y soportes documentales.</p>
+        </div>
+        <button class="btn btn-export" onclick="window.open('/api/exportar/ser124drec', '_blank')">📥 Exportar Archivo .TXT (PISIS)</button>
+      </div>
+
+      <div class="card" style="background: #e6f7f5; border-color: var(--teal);">
+        <h4 style="color: #004d40; margin-bottom: 10px;">⚙️ Base Paramétrica: Agregar Nuevo ID Recurso</h4>
+        <form onsubmit="postRecurso(event)">
+          <div class="grid" style="align-items: flex-end;">
+            <div class="form-group">
+              <label>ID Recurso (Exactamente 12 Caract.)</label>
+              <input type="text" id="new_id_recurso" name="id_recurso" maxlength="12" pattern="^[A-Za-z0-9]{12}$" placeholder="Ej: ID2069625612" required>
+            </div>
+            <div class="form-group">
+              <label>Descripción / Observación</label>
+              <input type="text" id="new_descripcion" name="descripcion" maxlength="150" placeholder="Ej: Res 696 Mod 763" required>
+            </div>
+            <button type="submit" class="btn btn-export" style="height: 42px;">Guardar ID</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="tabs-nav">
+          <button class="tab-btn active" onclick="switchTab('tab-ser-1', this)">1. Control</button>
+          <button class="tab-btn" onclick="switchTab('tab-ser-2', this)">2. Incorporación</button>
+          <button class="tab-btn" onclick="switchTab('tab-ser-3', this)">3. Contratos</button>
+          <button class="tab-btn" onclick="switchTab('tab-ser-4', this)">4. Pólizas</button>
+          <button class="tab-btn" onclick="switchTab('tab-ser-5', this)">5. Seguimiento</button>
+          <button class="tab-btn" onclick="switchTab('tab-ser-6', this)">6. Reintegro (No Ejec.)</button>
+          <button class="tab-btn" onclick="switchTab('tab-ser-7', this)">7. Reintegro (Rend.)</button>
+        </div>
+
+        <div id="tab-ser-1" class="tab-pane active">
+          <h3>Registro de Control</h3>
+          <form onsubmit="postForm(event, '/api/ser124drec/control')">
+            <input type="hidden" name="resolucion_origen" value="RES_2026">
+            <div class="grid">
+              <div class="form-group"><label>Tipo ID Entidad</label><input type="text" name="tipo_id_entidad" value="NI" readonly></div>
+              <div class="form-group"><label>Núm ID Entidad</label><input type="text" name="num_id_entidad" value="822002459" maxlength="12" readonly></div>
+              <div class="form-group"><label>Fecha Inicial (Periodo)</label><input type="date" name="fecha_inicial" required></div>
+              <div class="form-group"><label>Fecha Final (Periodo)</label><input type="date" name="fecha_final" required></div>
+            </div>
+            <div class="action-group">
+              <button type="submit" class="btn">Guardar Control</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="tab-ser-2" class="tab-pane">
+          <h3>Detalle de Incorporación</h3>
+          <form onsubmit="postForm(event, '/api/ser124drec/incorporacion')">
+            <input type="hidden" name="resolucion_origen" value="RES_2026">
+            <input type="hidden" name="nit_entidad" value="822002459">
+            <div class="grid">
+              <div class="form-group"><label>ID Recurso</label><select name="id_recurso" class="dynamic-recurso" required></select></div>
+              <div class="form-group"><label>Indicador</label><select name="ind_incorporacion" required><option value="I">I - Insertar</option><option value="A">A - Actualizar</option><option value="E">E - Anular</option><option value="NA">NA - No Aplica</option></select></div>
+              <div class="form-group"><label>Tipo Acto</label><select name="cod_tipo_acto"><option value="">Ninguno / NA</option><option value="1">1 - Ordenanza</option><option value="2">2 - Acuerdo</option><option value="3">3 - Decreto</option><option value="4">4 - Resolución</option><option value="5">5 - Acta</option></select></div>
+              <div class="form-group"><label>Num Acto</label><input type="text" name="num_acto" maxlength="20"></div>
+              <div class="form-group"><label>Fecha Acto</label><input type="date" name="fecha_incorporacion"></div>
+              <div class="form-group"><label>Valor Incorporado ($)</label><input type="number" step="0.01" name="valor_incorporado"></div>
+            </div>
+            <div class="action-group">
+              <button type="submit" class="btn">Guardar Incorporación</button>
+              <button type="button" class="btn btn-excel" onclick="abrirModalCarga('ser_incorporacion', 'excel')">📄 Subir Excel/CSV</button>
+              <button type="button" class="btn btn-txt" onclick="abrirModalCarga('ser_incorporacion', 'txt')">📝 Subir TXT (PISIS)</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="tab-ser-3" class="tab-pane">
+          <h3>Contratos y Actos Administrativos</h3>
+          <form onsubmit="postForm(event, '/api/ser124drec/contratos')">
+            <input type="hidden" name="resolucion_origen" value="RES_2026">
+            <input type="hidden" name="nit_entidad" value="822002459">
+            <div class="grid">
+              <div class="form-group"><label>ID Recurso</label><select name="id_recurso" class="dynamic-recurso" required></select></div>
+              <div class="form-group"><label>Indicador</label><select name="ind_actualizacion" required><option value="I">I - Insertar</option><option value="A">A - Actualizar</option><option value="E">E - Anular</option><option value="NA">NA - No Aplica</option></select></div>
+              <div class="form-group"><label>Tipo Contrato/Acto</label><select name="cod_tipo_contrato"><option value="">Ninguno</option><option value="1">1 - Contrato</option><option value="2">2 - Convenio</option><option value="3">3 - Nómina</option><option value="4">4 - Resolución</option><option value="5">5 - Oficio</option><option value="6">6 - Acta</option><option value="7">7 - Factura</option></select></div>
+              <div class="form-group"><label>Núm Contrato</label><input type="text" name="num_contrato" maxlength="20"></div>
+              <div class="form-group"><label>Fecha Contrato</label><input type="date" name="fecha_contrato"></div>
+              <div class="form-group"><label>Fecha Terminación</label><input type="date" name="fecha_terminacion"></div>
+              <div class="form-group"><label>Valor Contrato ($)</label><input type="number" step="0.01" name="valor_contrato"></div>
+              <div class="form-group"><label>Tipo ID Contratista</label><select name="tipo_id_contratista"><option value="CC">CC</option><option value="NI">NI</option><option value="DE">DE</option></select></div>
+              <div class="form-group"><label>Num ID Contratista</label><input type="text" name="num_id_contratista" maxlength="17"></div>
+              <div class="form-group"><label>Nombre Contratista</label><input type="text" name="nombre_contratista" maxlength="100"></div>
+              <div class="form-group"><label>Tipo ID Supervisor</label><select name="tipo_id_supervisor"><option value="CC">CC</option><option value="DE">DE</option></select></div>
+              <div class="form-group"><label>Num ID Supervisor</label><input type="text" name="num_id_supervisor" maxlength="17"></div>
+              <div class="form-group"><label>Nombre Supervisor</label><input type="text" name="nombre_supervisor" maxlength="100"></div>
+              <div class="form-group full-width">
+                <label>Objeto (Máx 500)</label>
+                <textarea name="objeto" maxlength="500" oninput="sanitizarPISIS(event)"></textarea>
+              </div>
+            </div>
+            <div class="action-group">
+              <button type="submit" class="btn">Guardar Contrato</button>
+              <button type="button" class="btn btn-excel" onclick="abrirModalCarga('ser_contratos', 'excel')">📄 Subir Excel/CSV</button>
+              <button type="button" class="btn btn-txt" onclick="abrirModalCarga('ser_contratos', 'txt')">📝 Subir TXT (PISIS)</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="tab-ser-4" class="tab-pane">
+          <h3>Pólizas</h3>
+          <form onsubmit="postForm(event, '/api/ser124drec/polizas')">
+            <input type="hidden" name="resolucion_origen" value="RES_2026">
+            <input type="hidden" name="nit_entidad" value="822002459">
+            <div class="grid">
+              <div class="form-group"><label>ID Recurso</label><select name="id_recurso" class="dynamic-recurso" required></select></div>
+              <div class="form-group"><label>Indicador</label><select name="ind_poliza" required><option value="I">I - Insertar</option><option value="A">A - Actualizar</option><option value="E">E - Anular</option><option value="NA">NA - No Aplica</option></select></div>
+              <div class="form-group"><label>Tipo Contrato</label><select name="cod_tipo_contrato"><option value="">Ninguno</option><option value="1">1 - Contrato</option><option value="2">2 - Convenio</option><option value="3">3 - Nómina</option><option value="4">4 - Resolución</option><option value="5">5 - Oficio</option><option value="6">6 - Acta</option><option value="7">7 - Factura</option></select></div>
+              <div class="form-group"><label>Núm Contrato</label><input type="text" name="num_contrato" maxlength="20"></div>
+              <div class="form-group"><label>Núm Póliza</label><input type="text" name="num_poliza" maxlength="20"></div>
+              <div class="form-group"><label>Fecha Póliza</label><input type="date" name="fecha_poliza"></div>
+            </div>
+            <div class="action-group">
+              <button type="submit" class="btn">Guardar Póliza</button>
+              <button type="button" class="btn btn-excel" onclick="abrirModalCarga('ser_polizas', 'excel')">📄 Subir Excel/CSV</button>
+              <button type="button" class="btn btn-txt" onclick="abrirModalCarga('ser_polizas', 'txt')">📝 Subir TXT (PISIS)</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="tab-ser-5" class="tab-pane">
+          <h3>Seguimiento Técnico y Financiero</h3>
+          <form onsubmit="postForm(event, '/api/ser124drec/seguimiento')">
+            <input type="hidden" name="resolucion_origen" value="RES_2026">
+            <input type="hidden" name="nit_entidad" value="822002459">
+            <div class="grid">
+              <div class="form-group"><label>ID Recurso</label><select name="id_recurso" class="dynamic-recurso" required></select></div>
+              <div class="form-group"><label>Indicador</label><select name="ind_seguimiento" required><option value="I">I - Insertar</option><option value="A">A - Actualizar</option><option value="E">E - Anular</option><option value="NA">NA - No Aplica</option></select></div>
+              <div class="form-group"><label>Tipo Contrato</label><select name="cod_tipo_contrato"><option value="">Ninguno</option><option value="1">1 - Contrato</option><option value="2">2 - Convenio</option><option value="3">3 - Nómina</option><option value="4">4 - Resolución</option><option value="5">5 - Oficio</option><option value="6">6 - Acta</option><option value="7">7 - Factura</option></select></div>
+              <div class="form-group"><label>Núm Contrato</label><input type="text" name="num_contrato" maxlength="20"></div>
+              <div class="form-group"><label>Tipo Acta</label><select name="cod_tipo_acta"><option value="">Ninguno</option><option value="1">1 - Parcial</option><option value="2">2 - Final</option><option value="3">3 - Liquidación</option></select></div>
+              <div class="form-group"><label>Núm Acta</label><input type="text" name="num_acta" maxlength="20"></div>
+              <div class="form-group"><label>Fecha Acta</label><input type="date" name="fecha_acta"></div>
+              <div class="form-group"><label>Valor Ejecutado ($)</label><input type="number" step="0.01" name="valor_ejecutado"></div>
+              <div class="form-group"><label>Valor Pagado ($)</label><input type="number" step="0.01" name="valor_pagado"></div>
+              <div class="form-group"><label>% Ejecución (0-100)</label><input type="number" step="0.01" max="100" name="porcentaje_ejecucion"></div>
+              <div class="form-group full-width">
+                <label>Conclusiones (Máx 500)</label>
+                <textarea name="conclusiones" maxlength="500" oninput="sanitizarPISIS(event)"></textarea>
+              </div>
+            </div>
+            <div class="action-group">
+              <button type="submit" class="btn">Guardar Seguimiento</button>
+              <button type="button" class="btn btn-excel" onclick="abrirModalCarga('ser_seguimiento', 'excel')">📄 Subir Excel/CSV</button>
+              <button type="button" class="btn btn-txt" onclick="abrirModalCarga('ser_seguimiento', 'txt')">📝 Subir TXT (PISIS)</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="tab-ser-6" class="tab-pane">
+          <h3>Reintegro No Ejecutado</h3>
+          <form onsubmit="postForm(event, '/api/ser124drec/reintegro_no_ejecutado')">
+            <input type="hidden" name="resolucion_origen" value="RES_2026">
+            <input type="hidden" name="nit_entidad" value="822002459">
+            <div class="grid">
+              <div class="form-group"><label>ID Recurso</label><select name="id_recurso" class="dynamic-recurso" required></select></div>
+              <div class="form-group"><label>Indicador</label><select name="ind_reintegro" required><option value="I">I - Insertar</option><option value="A">A - Actualizar</option><option value="E">E - Anular</option><option value="NA">NA - No Aplica</option></select></div>
+              <div class="form-group"><label>Tipo Acto</label><select name="cod_tipo_acto"><option value="">Ninguno</option><option value="1">1 - Ordenanza</option><option value="2">2 - Acuerdo</option><option value="3">3 - Decreto</option><option value="4">4 - Resolución</option><option value="5">5 - Acta</option></select></div>
+              <div class="form-group"><label>Núm Acto</label><input type="text" name="num_acto" maxlength="20"></div>
+              <div class="form-group"><label>Fecha Acto</label><input type="date" name="fecha_acto"></div>
+              <div class="form-group"><label>Entidad Destino</label><select name="cod_entidad_reintegro"><option value="">Ninguno</option><option value="1">1 - Tesoro Nacional</option><option value="2">2 - ADRES</option></select></div>
+              <div class="form-group"><label>NIT Banco (Sin DV)</label><input type="text" name="nit_banco" maxlength="9"></div>
+              <div class="form-group"><label>Núm Cuenta</label><input type="text" name="num_cuenta" maxlength="12"></div>
+              <div class="form-group"><label>Valor Reintegrado ($)</label><input type="number" step="0.01" name="valor_reintegrado"></div>
+              <div class="form-group"><label>Fecha Consignación</label><input type="date" name="fecha_consignacion"></div>
+              <div class="form-group"><label>Portafolio</label><select name="portafolio"><option value="">Ninguno</option><option value="403">403 - Tesoro Nal MinHacienda</option><option value="496">496 - ADRES</option></select></div>
+            </div>
+            <div class="action-group">
+              <button type="submit" class="btn">Guardar Reintegro</button>
+              <button type="button" class="btn btn-excel" onclick="abrirModalCarga('ser_reintegro_no_ejecutado', 'excel')">📄 Subir Excel/CSV</button>
+              <button type="button" class="btn btn-txt" onclick="abrirModalCarga('ser_reintegro_no_ejecutado', 'txt')">📝 Subir TXT (PISIS)</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="tab-ser-7" class="tab-pane">
+          <h3>Reintegro Rendimientos Financieros</h3>
+          <form onsubmit="postForm(event, '/api/ser124drec/reintegro_rendimientos')">
+            <input type="hidden" name="resolucion_origen" value="RES_2026">
+            <input type="hidden" name="nit_entidad" value="822002459">
+            <div class="grid">
+              <div class="form-group"><label>ID Recurso</label><select name="id_recurso" class="dynamic-recurso" required></select></div>
+              <div class="form-group"><label>Indicador</label><select name="ind_reintegro" required><option value="I">I - Insertar</option><option value="A">A - Actualizar</option><option value="E">E - Anular</option><option value="NA">NA - No Aplica</option></select></div>
+              <div class="form-group"><label>Tipo Acto</label><select name="cod_tipo_acto"><option value="">Ninguno</option><option value="1">1 - Ordenanza</option><option value="2">2 - Acuerdo</option><option value="3">3 - Decreto</option><option value="4">4 - Resolución</option><option value="5">5 - Acta</option></select></div>
+              <div class="form-group"><label>Núm Acto</label><input type="text" name="num_acto" maxlength="20"></div>
+              <div class="form-group"><label>Fecha Acto</label><input type="date" name="fecha_acto"></div>
+              <div class="form-group"><label>Entidad Destino</label><select name="cod_entidad_reintegro"><option value="">Ninguno</option><option value="1">1 - Tesoro Nacional</option><option value="2">2 - ADRES</option></select></div>
+              <div class="form-group"><label>NIT Banco (Sin DV)</label><input type="text" name="nit_banco" maxlength="9"></div>
+              <div class="form-group"><label>Núm Cuenta</label><input type="text" name="num_cuenta" maxlength="12"></div>
+              <div class="form-group"><label>Valor Rendimiento ($)</label><input type="number" step="0.01" name="valor_reintegrado"></div>
+              <div class="form-group"><label>Fecha Consignación</label><input type="date" name="fecha_consignacion"></div>
+              <div class="form-group"><label>Portafolio</label><select name="portafolio"><option value="">Ninguno</option><option value="403">403 - Tesoro Nal MinHacienda</option><option value="496">496 - ADRES</option></select></div>
+            </div>
+            <div class="action-group">
+              <button type="submit" class="btn">Guardar Rendimientos</button>
+              <button type="button" class="btn btn-excel" onclick="abrirModalCarga('ser_reintegro_rendimientos', 'excel')">📄 Subir Excel/CSV</button>
+              <button type="button" class="btn btn-txt" onclick="abrirModalCarga('ser_reintegro_rendimientos', 'txt')">📝 Subir TXT (PISIS)</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="modalCarga">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">Carga Masiva de Datos</h3>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-download-ex" onclick="window.open(`/api/cargador/plantilla/${currentUploadTable}?formato=excel`, '_blank')">📥 Plantilla (Excel)</button>
+          <button class="btn btn-download-tx" onclick="window.open(`/api/cargador/plantilla/${currentUploadTable}?formato=txt`, '_blank')">📥 Plantilla (TXT)</button>
+          <button class="close-modal" onclick="cerrarModalCarga()">&times;</button>
+        </div>
+      </div>
+      <div>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 15px;">Asegúrese de que el archivo contenga los encabezados exactos de la base de datos para mapeo automático o cumpla el estándar delimitado por Pipe (|).</p>
+        <input type="file" id="archivoCarga" accept=".csv, .xlsx, .xls, .txt">
+        <button class="btn btn-export" onclick="procesarArchivo()">Vista Previa / Validar</button>
+      </div>
+      <div class="table-preview-container">
+        <table class="table-preview" id="preview-table">
+          <thead id="preview-head"><tr><th>Cargue un archivo para pre-visualizar la información sanitizada</th></tr></thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn" style="background: var(--muted);" onclick="cerrarModalCarga()">Cancelar</button>
+        <button class="btn btn-export" id="btnConfirmarCarga" style="display: none;" onclick="confirmarCargaMasiva()">Confirmar Inserción a BD</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/main_financiero.js"></script>
+</body>
+</html>

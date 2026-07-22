@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>
+    if (localStorage.getItem('isAdmin') !== 'true') {
+        window.location.replace('/login');
+    }
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Auditoría - INFORME APS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <script src="/static/js/layout.js"></script>
+  <style>
+    .card { background: var(--surface); padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .tabs-nav { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+    .tab-btn { padding: 10px 15px; border: none; background: none; font-size: 0.85rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: 0.2s; }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+    .filters-bar { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--navy); text-transform: uppercase; }
+    .form-group input, .form-group select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; font-size: 0.85rem; font-family: 'Sora', sans-serif; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--teal); }
+    .btn { background: var(--navy); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+    .btn:hover { background: #002244; }
+    .btn-action { padding: 5px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; color: white; margin-right: 5px; }
+    .btn-edit { background: #f39c12; }
+    .btn-delete { background: #e53935; }
+    .table-container { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; max-height: 50vh; margin-bottom: 15px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.75rem; text-transform: uppercase;}
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { background: #dbeafe; position: sticky; top: 0; color: var(--navy); z-index: 1; cursor: pointer; user-select: none; font-weight: 700; }
+    th:hover { background: #bfdbfe; }
+    th.sort-asc::after { content: " ▲"; color: var(--teal); }
+    th.sort-desc::after { content: " ▼"; color: var(--teal); }
+    tr:hover { background: #f8fafc; }
+    .pagination { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--muted); }
+    .page-controls button { background: var(--bg); border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; border-radius: 4px; font-weight: 600; font-family: 'Sora', sans-serif;}
+    .page-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <app-sidebar active-menu="consultas"></app-sidebar>
+
+  <main class="main-content">
+    <app-topbar titulo="Módulo: Consultas y Auditoría Financiera"></app-topbar>
+
+    <div class="view-container">
+      <div class="module-header">
+        <div>
+          <h2>Auditoría y Consulta de Registros (SER124DREC)</h2>
+          <p>Verificación, validación y eliminación física de datos cargados en el componente financiero.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tabs-nav">
+          <button class="tab-btn active" onclick="setTab('ser_control', this)">1. Control</button>
+          <button class="tab-btn" onclick="setTab('ser_incorporacion', this)">2. Incorporación</button>
+          <button class="tab-btn" onclick="setTab('ser_contratos', this)">3. Contratos</button>
+          <button class="tab-btn" onclick="setTab('ser_polizas', this)">4. Pólizas</button>
+          <button class="tab-btn" onclick="setTab('ser_seguimiento', this)">5. Seguimiento</button>
+          <button class="tab-btn" onclick="setTab('ser_reintegro_no_ejecutado', this)">6. Reint. No Ejecutado</button>
+          <button class="tab-btn" onclick="setTab('ser_reintegro_rendimientos', this)">7. Reint. Rendimientos</button>
+        </div>
+
+        <div class="filters-bar">
+          <div class="filters">
+            <div class="form-group" id="flt-id">
+              <label>ID Recurso</label>
+              <input type="text" id="f_id_recurso" placeholder="Ej: ID2069625612">
+            </div>
+            <div class="form-group" id="flt-contrato" style="display: none;">
+              <label>Núm. Contrato</label>
+              <input type="text" id="f_num_contrato" placeholder="Ej: CPS-001">
+            </div>
+            <div class="form-group" id="flt-acto" style="display: none;">
+              <label>Núm. Acto</label>
+              <input type="text" id="f_num_acto" placeholder="Ej: RES-123">
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+              <button class="btn" onclick="buscarDatos()">Buscar Registros</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Mostrar</label>
+            <select id="pageSize" onchange="changePageSize()">
+              <option value="10">10 registros</option>
+              <option value="20">20 registros</option>
+              <option value="50">50 registros</option>
+              <option value="100">100 registros</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table id="data-table">
+            <thead id="t-head"><tr><th>Seleccione una tabla y presione Buscar</th></tr></thead>
+            <tbody id="t-body"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <span id="page-info">Mostrando 0 de 0 registros</span>
+          <div class="page-controls">
+            <button id="btn-prev" onclick="changePage(-1)">Anterior</button>
+            <span id="page-number" style="margin: 0 10px; font-weight: 700;">1</span>
+            <button id="btn-next" onclick="changePage(1)">Siguiente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/main_consultas.js"></script>
+</body>
+</html>
