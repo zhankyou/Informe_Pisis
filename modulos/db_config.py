@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 from sqlalchemy import create_engine, text
-from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,19 +21,36 @@ def verificar_crear_bd_local():
             existe = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")).fetchone()
             if not existe:
                 conn.execute(text(f"CREATE DATABASE {db_name}"))
-                print(f"Base de datos '{db_name}' creada automáticamente.")
+                print(f"⚙️ Base de datos '{db_name}' creada automáticamente.")
     except Exception as e:
-        print(f"No se pudo verificar la creación de la DB local: {e}")
+        print(f"⚠️ No se pudo verificar la creación de la DB local: {e}")
 
 def get_engine(admin=False):
     ambiente = os.getenv("AMBIENTE", "local").strip().lower()
     
     if ambiente == "produccion":
         db_url = os.getenv("DATABASE_URL")
+        
         if db_url:
             if db_url.startswith("postgres://"):
                 db_url = db_url.replace("postgres://", "postgresql://", 1)
-            return create_engine(db_url, poolclass=NullPool)
+            
+            if "?" not in db_url:
+                db_url += "?sslmode=require&client_encoding=utf8"
+            else:
+                if "sslmode" not in db_url:
+                    db_url += "&sslmode=require"
+                if "client_encoding" not in db_url:
+                    db_url += "&client_encoding=utf8"
+                    
+            return create_engine(
+                db_url, 
+                pool_size=2, 
+                max_overflow=5, 
+                pool_recycle=299, 
+                pool_pre_ping=True,
+                pool_timeout=30
+            )
             
         db_user = os.getenv("DB_USER_AIVEN", "")
         db_pass = os.getenv("DB_PASSWORD_AIVEN", "")
@@ -43,7 +59,15 @@ def get_engine(admin=False):
         db_name = os.getenv("DB_NAME_AIVEN", "")
         
         cadena = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}?sslmode=require&client_encoding=utf8"
-        return create_engine(cadena, poolclass=NullPool)
+        
+        return create_engine(
+            cadena, 
+            pool_size=2, 
+            max_overflow=5, 
+            pool_recycle=299, 
+            pool_pre_ping=True,
+            pool_timeout=30
+        )
         
     else:
         db_user = os.getenv("DB_USER", "postgres")
