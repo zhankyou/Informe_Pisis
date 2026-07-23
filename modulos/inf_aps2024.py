@@ -1,38 +1,37 @@
 # -*- coding: utf-8 -*-
 from modulos.inf_db_utils import table_exists, find_column, get_count, get_list
 
-
 def extraer_datos_2024():
-    res = {"kpis": {"familias": 0, "personas": 0, "gestantes": 0, "discapacidad": 0}, "charts": {"sexo": [], "eps": []}}
-    t_fam, t_ind = "aps_2024_familias", "aps_2024_integrantes"
+    data = {"hogares": 0, "poblacion": 0, "gestantes": 0, "sexo": [], "aseguramiento": []}
+    
+    tabla_ind = 'caracterizacion_si_aps_individual'
+    if not table_exists(tabla_ind): 
+        tabla_ind = 'aps_2024_integrantes'
+        
+    if table_exists(tabla_ind):
+        data["poblacion"] = get_count(f"SELECT COUNT(*) FROM {tabla_ind}")
+        
+        col_sexo = find_column(tabla_ind, ['sexo', '8_sexo', 'sexo_al_nacer'])
+        if col_sexo:
+            data["sexo"] = get_list(f"SELECT CAST({col_sexo} AS VARCHAR) as label, COUNT(*) as value FROM {tabla_ind} WHERE {col_sexo} IS NOT NULL AND TRIM(CAST({col_sexo} AS VARCHAR)) != '' GROUP BY {col_sexo}")
+            
+        col_eps = find_column(tabla_ind, ['eapb', 'eps', 'aseguradora', '14_eapb'])
+        if col_eps:
+            data["aseguramiento"] = get_list(f"SELECT CAST({col_eps} AS VARCHAR) as label, COUNT(*) as value FROM {tabla_ind} WHERE {col_eps} IS NOT NULL AND TRIM(CAST({col_eps} AS VARCHAR)) != '' GROUP BY {col_eps} ORDER BY value DESC LIMIT 5")
+            
+        col_gest = find_column(tabla_ind, ['gestante', 'encuentra_e'])
+        if col_gest:
+            data["gestantes"] += get_count(f"SELECT COUNT(*) FROM {tabla_ind} WHERE UPPER(CAST({col_gest} AS VARCHAR)) IN ('1', 'SI', 'SÍ', 'TRUE')")
+            
+    tabla_fam = 'caracterizacion_si_aps_familiar'
+    if not table_exists(tabla_fam): 
+        tabla_fam = 'aps_2024_familias'
+    
+    if table_exists(tabla_fam):
+        data["hogares"] = get_count(f"SELECT COUNT(*) FROM {tabla_fam}")
+        
+        col_gest_fam = find_column(tabla_fam, ['gestante_en_la', 'gestante'])
+        if col_gest_fam:
+            data["gestantes"] += get_count(f"SELECT COUNT(*) FROM {tabla_fam} WHERE UPPER(CAST({col_gest_fam} AS VARCHAR)) IN ('1', 'SI', 'SÍ', 'TRUE')")
 
-    if table_exists(t_fam):
-        res["kpis"]["familias"] = get_count(f"SELECT COUNT(*) FROM {t_fam}")
-        c_gest = find_column(t_fam, ["gestante", "embarazo"])
-        if c_gest:
-            res["kpis"]["gestantes"] = get_count(
-                f"SELECT COUNT(*) FROM {t_fam} WHERE CAST({c_gest} AS TEXT) ILIKE '%SI%' OR CAST({c_gest} AS TEXT) = '1'")
-
-    if table_exists(t_ind):
-        res["kpis"]["personas"] = get_count(f"SELECT COUNT(*) FROM {t_ind}")
-
-        c_disc = find_column(t_ind, ["discapacidad", "reconoce_algu", "limitacion"])
-        if c_disc:
-            res["kpis"]["discapacidad"] = get_count(
-                f"SELECT COUNT(*) FROM {t_ind} WHERE {c_disc} IS NOT NULL AND CAST({c_disc} AS TEXT) NOT ILIKE '%Ninguna%' AND CAST({c_disc} AS TEXT) NOT ILIKE '%No aplica%' AND CAST({c_disc} AS TEXT) NOT ILIKE '%Sin discapacidad%'")
-
-        c_sexo = find_column(t_ind, ["sexo", "genero"])
-        if c_sexo:
-            raw_sex = get_list(
-                f"SELECT {c_sexo} as label, COUNT(*) as total FROM {t_ind} WHERE {c_sexo} IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
-            res["charts"]["sexo"] = [
-                {"label": str(r["label"]).replace('1. ', '').replace('2. ', '')[:15], "total": r["total"]} for r in
-                raw_sex]
-
-        c_eps = find_column(t_ind, ["eapb", "eps", "aseguradora"])
-        if c_eps:
-            raw_eps = get_list(
-                f"SELECT {c_eps} as label, COUNT(*) as total FROM {t_ind} WHERE {c_eps} IS NOT NULL AND CAST({c_eps} AS TEXT) != 'None' AND TRIM(CAST({c_eps} AS TEXT)) != '' GROUP BY 1 ORDER BY 2 DESC LIMIT 5")
-            res["charts"]["eps"] = [{"label": str(r["label"])[:25], "total": r["total"]} for r in raw_eps]
-
-    return res
+    return data
