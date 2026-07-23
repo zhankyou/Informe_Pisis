@@ -45,12 +45,11 @@ def get_count(query, params=None):
         return 0
 
 def table_exists(table_name):
-    """Verifica si una tabla existe en el esquema public de la base de datos"""
+    """Verifica de forma global si una tabla existe sin restringirse al esquema 'public'"""
     query = """
         SELECT EXISTS (
             SELECT 1 FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = :tname
+            WHERE table_name = :tname
         )
     """
     try:
@@ -63,26 +62,26 @@ def table_exists(table_name):
 
 def find_column(table_name, column_name):
     """
-    Solución definitiva: Extrae el mapa de columnas y evalúa la lista en memoria mediante Python.
-    Evita excepciones de casteo de tipos (ARRAY vs sql_identifier) en PostgreSQL.
+    Extrae el mapa de columnas real (sin importar el esquema) y evalúa 
+    la lista en memoria mediante Python. Retorna el nombre exacto de la DB.
     """
-    nombres = column_name if isinstance(column_name, (list, tuple)) else [column_name]
+    nombres_buscados = [str(c).lower() for c in (column_name if isinstance(column_name, (list, tuple)) else [column_name])]
+    
     query = """
         SELECT column_name 
         FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = :tname
+        WHERE table_name = :tname
     """
     try:
         with engine.connect() as conn:
-            # Trae todas las columnas de la tabla a la memoria
             result = conn.execute(text(query), {"tname": str(table_name).lower()})
-            columnas_db = [str(row[0]).lower() for row in result.fetchall()]
+            # Extraemos las columnas reales tal cual están en PostgreSQL
+            columnas_db = [str(row[0]) for row in result.fetchall()]
             
-            # Realiza el match flexible en Python iterando sobre las posibles variaciones
-            for nombre in nombres:
-                if str(nombre).lower() in columnas_db:
-                    return str(nombre).lower()  # Retorna el nombre exacto de la columna en la BD
+            # Match flexible en memoria
+            for col_db in columnas_db:
+                if col_db.lower() in nombres_buscados:
+                    return col_db  # Retorna el nombre exacto (vital para los QUOTES en la consulta)
                     
         return False
     except Exception as e:
