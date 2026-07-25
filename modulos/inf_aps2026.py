@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from modulos.inf_db_utils import table_exists, find_column, get_count, get_list
 
+
 def extraer_datos_2026():
     res = {"kpis": {"familias": 0, "personas": 0, "gestantes": 0, "discapacidad": 0}, "charts": {"sexo": [], "eps": []}}
     t_fam, t_ind = "caracterizacion_si_aps_familiar_2026", "caracterizacion_si_aps_individual_2026"

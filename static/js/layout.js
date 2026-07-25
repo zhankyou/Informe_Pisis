@@ -1,16 +1,21 @@
-const isAdmin = localStorage.getItem('isAdmin') === 'true';
-
 class AppSidebar extends HTMLElement {
   connectedCallback() {
     const activeMenu = this.getAttribute('active-menu') || '';
 
+    // Sanitización robusta del rol
+    const rolRaw = sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario') || 'publico';
+    const rol = rolRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
     let adminMenus = '';
-    if (isAdmin) {
+    if (rol !== 'publico') {
         adminMenus = `
           <div class="nav-item" style="margin-top: 15px; font-weight: 700; color: white;">📁 Resolución SER124DREC</div>
           <a href="/poblacional" class="sub-item ${activeMenu === 'poblacional' ? 'active' : ''}">📄 Poblacional (SI-APS)</a>
           <a href="/financiero" class="sub-item ${activeMenu === 'financiero' ? 'active' : ''}">💰 Financiero (SER124)</a>
           <a href="/consultas" class="sub-item-child ${activeMenu === 'consultas' ? 'active' : ''}">↳ 🔍 Auditoría (SER124)</a>
+
+          <div class="nav-item" style="margin-top: 15px; font-weight: 700; color: white;">📁 Gestión Humana y Pagos</div>
+          <a href="/ponderacion" class="sub-item ${activeMenu === 'ponderacion' ? 'active' : ''}">📊 Matriz de Ponderación</a>
         `;
     }
 
@@ -23,6 +28,7 @@ class AppSidebar extends HTMLElement {
         <div class="nav-menu">
           <a href="/" class="nav-item ${activeMenu === 'dashboard' ? 'active' : ''}">📊 Dashboard General</a>
           <a href="/informe" class="nav-item ${activeMenu === 'informe' ? 'active' : ''}">📈 Informe Entidades</a>
+          <a href="/formulario_acceso" class="nav-item ${activeMenu === 'formulario_acceso' ? 'active' : ''}">📋 Formulario de Acceso</a>
           ${adminMenus}
           <div class="nav-item" style="margin-top: 15px; font-weight: 700; color: white;">📅 Cronograma (EBS)</div>
           <a href="/cronograma" class="sub-item ${activeMenu === 'cronograma' ? 'active' : ''}">📍 Programación Operativa</a>
@@ -35,8 +41,23 @@ class AppSidebar extends HTMLElement {
 class AppTopbar extends HTMLElement {
   connectedCallback() {
     const titulo = this.getAttribute('titulo') || 'Módulo Principal';
-    const userLabel = isAdmin ? '👤 Rol: ADMINISTRADOR' : '👤 VISTA PÚBLICA';
-    const btnAccion = isAdmin
+
+    // Extracción y sanitización de sesión
+    const rolRaw = sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario') || 'publico';
+    const userRaw = sessionStorage.getItem('username') || localStorage.getItem('username') || '';
+
+    // Evaluación segura sin tildes ni mayúsculas
+    const rolNormalizado = rolRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const esPublico = rolNormalizado === 'publico';
+
+    // Formateo visual
+    const rol = rolRaw.toUpperCase().replace('ADMIN', 'ADMINISTRADOR');
+    const usuario = userRaw ? userRaw.toUpperCase() : 'INVITADO';
+
+    const userLabel = esPublico ? '👤 VISTA PÚBLICA' : `👤 ${usuario} | Rol: <span style="color: #3b82f6;">${rol}</span>`;
+
+    // Condicional exacto del botón
+    const btnAccion = !esPublico
         ? `<button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>`
         : `<button class="btn-logout" style="background: var(--teal);" onclick="window.location.href='/login'">Iniciar Sesión</button>`;
 
@@ -56,10 +77,15 @@ customElements.define('app-sidebar', AppSidebar);
 customElements.define('app-topbar', AppTopbar);
 
 window.cerrarSesion = function() {
-    localStorage.removeItem('isAdmin');
+    // Purga integral de la sesión
+    sessionStorage.clear();
+    localStorage.clear();
     window.location.href = '/';
 };
 
+// ============================================================================
+// OVERRIDE DE ALERTAS NATIVAS
+// ============================================================================
 window.originalAlert = window.alert;
 window.alert = function(message) {
     let overlay = document.getElementById('custom-alert-overlay');

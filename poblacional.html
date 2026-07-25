@@ -1,17 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <script>
-    if (localStorage.getItem('isAdmin') !== 'true') {
-        window.location.replace('/login');
-    }
-  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Módulo Poblacional SI-APS - INFORME APS</title>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/layout.css">
-  <script src="/static/js/layout.js"></script>
+  <script src="/static/js/layout.js?v=7.0"></script>
   <style>
     .card { background: var(--surface); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
     .grid-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 15px; }
@@ -43,7 +38,6 @@
         </div>
       </div>
 
-      <!-- CARGA DE ARCHIVOS -->
       <div class="card" style="background: #e6f7f5; border-color: var(--teal);">
         <h3 style="color: var(--navy); margin-bottom: 5px;">📥 Carga de Datos Crudos (Epicollect)</h3>
         <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 15px;">Suba los archivos exportados de Epicollect (.csv o .xlsx) para alimentar las tablas temporales del motor ETL.</p>
@@ -61,7 +55,6 @@
         </div>
       </div>
 
-      <!-- MONITOR ETL -->
       <div class="card">
         <h3 style="color: var(--navy); margin-bottom: 5px;">📡 Sincronización ETL (Epicollect ➔ SI-APS PISIS)</h3>
         <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 15px;">Monitor de transformación y volcado de formularios a estructura rígida PISIS (Tipos 2 y 3).</p>
@@ -92,7 +85,6 @@
         </div>
       </div>
 
-      <!-- DESCARGA -->
       <div class="card" style="border: 1px solid var(--navy);">
         <h3 style="color: var(--navy); margin-bottom: 5px;">📤 Exportación y Generación de Archivo PISIS</h3>
         <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 15px;">El sistema autogenerará el Registro de Control (Tipo 1) totalizando las familias e integrantes sincronizados.</p>
@@ -174,5 +166,6 @@
     }
     document.addEventListener('DOMContentLoaded', cargarMetricasPoblacional);
   </script>
+  <script src="/static/js/rbac.js?v=7.0"></script>
 </body>
 </html>

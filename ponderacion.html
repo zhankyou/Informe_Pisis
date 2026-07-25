@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matriz de Ponderación - INFORME APS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <script src="/static/js/layout.js"></script>
+  <style>
+    /* =========================================================================
+       ESTILOS DE LA INTERFAZ PRINCIPAL (UI)
+       ========================================================================= */
+    .card { background: var(--surface); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .tabs-nav { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; }
+    .tab-btn { padding: 10px 15px; border: none; background: none; font-size: 0.85rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: 0.2s; }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 0.75rem; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; }
+    input, textarea { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; outline: none; font-size: 0.85rem; font-family: 'Sora', sans-serif; transition: 0.2s; background: #fff;}
+    input:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0, 176, 155, 0.1); }
+
+    .btn { background: var(--navy); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover { background: #002244; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .btn-export { background: #10b981; color: white; }
+    .btn-export:hover { background: #059669; }
+    .btn-add { background: var(--teal); padding: 8px 12px; font-size: 0.75rem; }
+    .btn-edit { background: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; transition: 0.2s; }
+    .btn-del { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 700; transition: 0.2s; }
+
+    .modern-grid-container { display: flex; gap: 25px; align-items: flex-start; margin-top: 25px; flex-wrap: wrap; }
+    .modern-left { flex: 0 0 280px; display: flex; flex-direction: column; gap: 20px; }
+    .modern-right { flex: 1; min-width: 650px; }
+
+    .kpi-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+    .kpi-header { background: #f8fafc; padding: 12px 15px; font-size: 0.75rem; font-weight: 700; color: var(--navy); border-bottom: 1px solid var(--border); text-transform: uppercase; text-align: center; }
+    .kpi-header.highlight { background: #ef4444; color: white; border-bottom: none; }
+    .kpi-body { padding: 20px 15px; display: flex; align-items: center; justify-content: center; }
+    .kpi-body input { width: 100%; border: 1.5px dashed var(--border); text-align: center; font-size: 1.3rem; font-weight: 700; color: var(--navy); outline: none; border-radius: 8px; transition: 0.2s; padding: 12px; background: #f0fdf4; }
+    .kpi-body .value-text { font-size: 1.5rem; font-weight: 700; color: #b91c1c; }
+    .modern-textarea { width: 100%; border: none; padding: 15px; resize: vertical; min-height: 140px; outline: none; font-size: 0.85rem; font-family: inherit; color: var(--navy); line-height: 1.6; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;}
+
+    .modern-table-wrapper { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02); background: #fff; }
+    .modern-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem; }
+    .modern-table th { background: var(--navy); color: white; padding: 12px 6px; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; border-right: 1px solid rgba(255,255,255,0.1); }
+    .modern-table td { padding: 4px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; border-right: 1px solid #f1f5f9; }
+    .modern-table input { width: 100%; box-sizing: border-box; border: 1px solid transparent; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.8rem; transition: 0.2s; background: transparent; font-weight: 500; }
+    .modern-table input:focus:not([readonly]) { border-color: var(--teal); background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(0, 176, 155, 0.2);}
+    .modern-table input[readonly] { color: var(--navy); font-weight: 700; background: transparent; cursor: default; }
+
+    .col-meta { background-color: #fdf2f8; }
+    .col-ejec { background-color: #f0fdfa; }
+    .modern-table tfoot th, .modern-table tfoot td { background: #f8fafc; font-weight: 700; padding: 12px 10px; border-top: 2px solid var(--border); color: var(--navy); }
+    .modern-table tfoot .total-val { font-size: 1.15rem; color: #15803d; }
+
+    .search-bar { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-end; background: #f8fafc; padding: 18px; border-radius: 10px; border: 1px solid var(--border); }
+    .table-container { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; max-height: 50vh; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .data-table th { background: #dbeafe; position: sticky; top: 0; color: var(--navy); font-weight: 700; text-transform: uppercase; z-index: 1;}
+
+    /* =========================================================================
+       ESTILOS DEL TEMPLATE OCULTO PARA NAVEGADOR
+       ========================================================================= */
+    #print-template { display: none; }
+
+    /* =========================================================================
+       REGLAS ESTRICTAS PARA PREVISUALIZACIÓN Y GENERACIÓN PDF (NATIVO)
+       ========================================================================= */
+    @media print {
+        @page { size: letter landscape; margin: 10mm; }
+
+        /* Oculta la interfaz principal y elementos innecesarios */
+        body { margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        app-sidebar, app-topbar, .no-print, #main-ui { display: none !important; }
+
+        /* Muestra el template como un contenedor flexible que ocupa exactamente el 100% de la hoja */
+        #print-template {
+            display: flex !important;
+            flex-direction: column;
+            width: 100%;
+            height: 95vh; /* 95% del alto visible de la hoja impresa para evitar desbordes */
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #0f172a;
+        }
+
+        .pt-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 12px; flex-shrink: 0; }
+        .pt-title { font-size: 14pt; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; }
+        .pt-subtitle { font-size: 9pt; color: #64748b; font-weight: 600; }
+
+        .pt-info-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; flex-shrink: 0; }
+        .pt-info-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px; }
+        .pt-label { font-size: 7pt; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+        .pt-value { font-size: 9pt; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Contenedor principal adaptable */
+        .pt-main-layout { display: flex; gap: 15px; flex: 1; min-height: 0; } /* min-height 0 permite compresión en flexbox */
+
+        /* Panel Izquierdo */
+        .pt-left-col { flex: 0 0 30%; display: flex; flex-direction: column; gap: 10px; }
+        .pt-kpi { border-radius: 4px; padding: 8px; text-align: center; border: 1px solid #cbd5e1; }
+        .pt-kpi.base { background: #f0fdf4; border-color: #bbf7d0; }
+        .pt-kpi.cobro { background: #fef2f2; border-color: #fecaca; }
+        .pt-kpi-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+        .pt-kpi-value { font-size: 14pt; font-weight: 800; }
+        .pt-kpi.base .pt-kpi-label { color: #166534; }
+        .pt-kpi.base .pt-kpi-value { color: #15803d; }
+        .pt-kpi.cobro .pt-kpi-label { color: #991b1b; }
+        .pt-kpi.cobro .pt-kpi-value { color: #b91c1c; }
+
+        .pt-obs-container { flex: 1; background: #fff; border: 1px solid #cbd5e1; border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
+        .pt-obs-title { background: #f8fafc; font-weight: 700; font-size: 8pt; padding: 6px; border-bottom: 1px solid #cbd5e1; text-transform: uppercase; }
+        .pt-obs-content { padding: 8px; font-size: 8pt; line-height: 1.4; text-align: justify; flex: 1; }
+
+        /* Panel Derecho (Tabla estirable) */
+        .pt-right-col { flex: 1; display: flex; flex-direction: column; }
+        .pt-table { width: 100%; height: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 8pt; text-align: center; }
+        .pt-table th { background: #0f172a; color: #fff; padding: 4px; font-weight: 600; text-transform: uppercase; }
+        .pt-table td { border-bottom: 1px solid #f1f5f9; padding: 2px 4px; font-weight: 500; }
+        .pt-table tbody tr:nth-child(even) td { background-color: #f8fafc; }
+        .pt-table tbody tr:last-child td { border-bottom: none; }
+        .pt-table tfoot td { background: #f1f5f9; font-weight: 800; padding: 6px; border-top: 2px solid #cbd5e1; }
+
+        .bg-print-highlight { color: #0ea5e9; font-weight: 700; }
+        .bg-print-pago { color: #059669; font-weight: 800; }
+
+        .pt-signature { margin-top: 15px; border-top: 1px solid #94a3b8; width: 200px; text-align: center; font-size: 8pt; font-weight: 600; padding-top: 4px; align-self: flex-end; flex-shrink: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <app-sidebar active-menu="ponderacion"></app-sidebar>
+
+  <main class="main-content" id="main-ui">
+    <app-topbar titulo="Matriz de Ponderación (Ejecución y Pagos)"></app-topbar>
+
+    <div class="view-container">
+      <div class="module-header no-print">
+        <div>
+          <h2>Gestión Contractual y Novedades</h2>
+          <p>Registro analítico de ejecución financiera mensual para perfiles operativos APS.</p>
+        </div>
+        <!-- Botón que activa la previsualización de impresión nativa -->
+        <button class="btn btn-export" onclick="imprimirComprobante()">📄 Ver y Guardar PDF</button>
+      </div>
+
+      <div class="card no-print-bg">
+        <div class="tabs-nav no-print">
+          <button class="tab-btn active" onclick="setCategoria('ENFERMERIA', this)">1. Prof. Enfermería</button>
+          <button class="tab-btn" onclick="setCategoria('MEDICINA', this)">2. Prof. Medicina</button>
+          <button class="tab-btn" onclick="setCategoria('PSICOLOGIA', this)">3. Prof. Psicología</button>
+          <button class="tab-btn" onclick="setCategoria('TECNICO', this)">4. Perfil Técnico</button>
+        </div>
+
+        <form id="form-registro" onsubmit="guardarRegistro(event)" style="background: #ffffff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 25px;">
+          <input type="hidden" id="reg_id" value="">
+          <h4 style="margin-bottom: 20px; color: var(--navy); border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800;">
+            MATRIZ DE PONDERACIÓN - <span id="lbl-cat" style="color: var(--teal);">ENFERMERIA</span>
+          </h4>
+
+          <div class="grid">
+            <div class="form-group"><label>Nombre Completo</label><input type="text" id="nombre_completo" required></div>
+            <div class="form-group"><label>Núm. Documento</label><input type="text" id="numero_documento" required></div>
+            <div class="form-group"><label>Núm. Contrato</label><input type="text" id="numero_contrato" required pattern="^[A-Za-z0-9]+-\d{4}$" placeholder="Ej: 230-2026"></div>
+            <div class="form-group"><label>Cuenta de Cobro</label><input type="text" id="cuenta" required placeholder="Ej: 1, 2, 3..."></div>
+            <div class="form-group"><label>Fecha Inicio (Periodo)</label><input type="date" id="fecha_inicio" required></div>
+            <div class="form-group"><label>Fecha Fin (Periodo)</label><input type="date" id="fecha_fin" required></div>
+          </div>
+
+          <div class="modern-grid-container">
+            <div class="modern-left">
+              <div class="kpi-card">
+                <div class="kpi-header" style="background: #dcfce7; color: #166534;">Total Contrato Base</div>
+                <div class="kpi-body">
+                  <input type="number" id="valor_contrato" step="0.01" required placeholder="0.00" oninput="calcularMatriz()">
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-header highlight">Valor Liquidado a Cobrar</div>
+                <div class="kpi-body" style="background: #fef2f2;">
+                  <span class="value-text" id="lbl_valor_cobrar">$ 0.00</span>
+                  <input type="hidden" id="valor_cobrar">
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-header">Observaciones / Novedades</div>
+                <textarea id="observaciones" class="modern-textarea" maxlength="500" placeholder="Escriba aquí los detalles de la ejecución del mes..."></textarea>
+              </div>
+            </div>
+
+            <div class="modern-right">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">
+                <label style="font-size: 0.85rem; color: var(--muted); font-weight: 700;">Desglose Analítico de Ejecución</label>
+                <button type="button" class="btn btn-add" onclick="agregarFilaMatriz()">+ Añadir Fila</button>
+              </div>
+
+              <div class="modern-table-wrapper">
+                <table class="modern-table" id="tabla-matriz">
+                  <thead>
+                    <tr>
+                      <th style="width: 12%;">Ítem</th>
+                      <th style="width: 14%;">% Pond.</th>
+                      <th style="width: 18%;">Valor ($)</th>
+                      <th style="width: 14%;">Meta</th>
+                      <th style="width: 14%;">Ejecución</th>
+                      <th style="width: 20%;">Pago Mes</th>
+                      <th style="width: 8%;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-matriz"></tbody>
+                  <tfoot>
+                    <tr>
+                      <td style="text-align: right;">Total %:</td>
+                      <td style="text-align: center;"><span id="tot-porcentaje">100</span>%</td>
+                      <td colspan="3" style="text-align: right; padding-right: 20px;">Total Liquidación:</td>
+                      <td class="total-val" id="tot-cobro">$ 0.00</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align: right; margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+            <button type="button" class="btn" style="background: white; color: var(--navy); border: 1px solid var(--border); margin-right: 10px;" onclick="limpiarFormulario()">Limpiar Formulario</button>
+            <button type="submit" class="btn">💾 Guardar Registro Oficial</button>
+          </div>
+        </form>
+
+        <div class="search-bar">
+          <div class="form-group" style="flex: 1;">
+            <label style="color: var(--muted);">Búsqueda Rápida en Base de Datos</label>
+            <input type="text" id="busqueda" placeholder="Buscar por nombre, documento o número de contrato..." onkeyup="if(event.key === 'Enter') cargarTabla()" style="border: none; border-bottom: 2px solid var(--border); border-radius: 0; padding-left: 0; background: transparent;">
+          </div>
+          <button class="btn" style="padding: 10px 25px;" onclick="cargarTabla()">🔍 Consultar</button>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table" id="tabla-datos">
+            <thead>
+              <tr>
+                <th style="text-align: center;">Acción</th>
+                <th>Nombre Completo</th>
+                <th>Documento</th>
+                <th>Contrato</th>
+                <th>Periodo</th>
+                <th>Cuenta</th>
+                <th>Valor Contrato</th>
+                <th>Valor a Cobrar</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-datos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       TEMPLATE DE IMPRESIÓN PDF (MODERNO SAAS NATIVO)
+       ========================================== -->
+  <div id="print-template">
+    <div class="pt-header">
+      <h2 class="pt-title">MATRIZ DE PONDERACIÓN - <span id="pt-cat"></span></h2>
+      <div class="pt-subtitle" id="pt-fecha-gen"></div>
+    </div>
+
+    <div class="pt-info-grid">
+      <div class="pt-info-box"><div class="pt-label">Contratista</div><div class="pt-value" id="pt-nombre"></div></div>
+      <div class="pt-info-box"><div class="pt-label">Documento</div><div class="pt-value" id="pt-doc"></div></div>
+      <div class="pt-info-box"><div class="pt-label">Contrato</div><div class="pt-value" id="pt-contrato"></div></div>
+      <div class="pt-info-box"><div class="pt-label">Cuenta Cobro</div><div class="pt-value" id="pt-cuenta"></div></div>
+      <div class="pt-info-box"><div class="pt-label">Periodo Ejecución</div><div class="pt-value" id="pt-periodo"></div></div>
+    </div>
+
+    <div class="pt-main-layout">
+      <!-- Columna Izquierda: KPIs y Observaciones -->
+      <div class="pt-left-col">
+        <div class="pt-kpi base">
+            <div class="pt-kpi-label">Total Contrato Base</div>
+            <div class="pt-kpi-value" id="pt-val-base"></div>
+        </div>
+
+        <div class="pt-kpi cobro">
+            <div class="pt-kpi-label">Valor a Cobrar</div>
+            <div class="pt-kpi-value" id="pt-val-cobro"></div>
+        </div>
+
+        <div class="pt-obs-container">
+          <div class="pt-obs-title">Observaciones / Novedades</div>
+          <div class="pt-obs-content" id="pt-obs"></div>
+        </div>
+      </div>
+
+      <!-- Columna Derecha: Tabla Dinámica estirable -->
+      <div class="pt-right-col">
+        <table class="pt-table">
+          <thead>
+            <tr>
+              <th>Ítem Contrato</th>
+              <th>Ponderación (%)</th>
+              <th>Valor Porcentaje</th>
+              <th>Ejecución Meta</th>
+              <th>Ejecución Real</th>
+              <th>Pago Mes</th>
+            </tr>
+          </thead>
+          <tbody id="pt-tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td>Total</td>
+              <td id="pt-tot-pct">100%</td>
+              <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL LIQUIDACIÓN:</td>
+              <td id="pt-tot-cobro" class="bg-print-pago"></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="pt-signature">
+          Firma Responsable / Supervisor
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/rbac.js"></script>
+  <script src="/static/js/main_ponderacion.js"></script>
+</body>
+</html>

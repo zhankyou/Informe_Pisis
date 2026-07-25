@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <script>
-    if (localStorage.getItem('isAdmin') !== 'true') {
-        window.location.replace('/login');
-    }
-  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Módulo Auditoría - INFORME APS</title>
@@ -117,6 +112,9 @@
     </div>
   </main>
 
-  <script src="/static/js/main_consultas.js"></script>
+  <!-- Actualización obligatoria v6.0 para forzar la eliminación de la caché de navegador -->
+  <script src="/static/js/rbac.js?v=6.0"></script>
+  <script src="/static/js/main_consultas.js?v=6.0"></script>
+
 </body>
 </html>

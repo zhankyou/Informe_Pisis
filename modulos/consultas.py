@@ -7,11 +7,9 @@ from modulos.db_config import engine
 consultas_bp = Blueprint('consultas', __name__)
 DIR_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 @consultas_bp.route('/consultas_ui')
 def vista_consultas():
     return send_from_directory(DIR_BASE, "consultas.html")
-
 
 @consultas_bp.route('/api/consultas/<tabla>', methods=['GET'])
 def obtener_datos(tabla):
@@ -61,7 +59,6 @@ def obtener_datos(tabla):
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e)}), 500
 
-
 @consultas_bp.route('/api/consultas/<tabla>/<int:id_registro>', methods=['DELETE'])
 def eliminar_registro(tabla, id_registro):
     tablas_validas = [
@@ -74,7 +71,6 @@ def eliminar_registro(tabla, id_registro):
 
     try:
         with engine.begin() as conn:
-            # Validar si el recurso está bloqueado antes de eliminar (excepto ser_control)
             if tabla != 'ser_control':
                 rec_query = text(f"SELECT id_recurso FROM {tabla} WHERE id = :id")
                 id_rec = conn.execute(rec_query, {"id": id_registro}).scalar()

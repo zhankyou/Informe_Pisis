@@ -40,6 +40,12 @@ async function buscarDatos() {
 
   try {
     const res = await fetch(url);
+
+    if (res.status === 429) {
+        document.getElementById('t-body').innerHTML = `<tr><td style="color: #e53935; text-align: center; padding: 20px;">Has excedido el límite de consultas (Error 429). Por favor, espera e intenta de nuevo.</td></tr>`;
+        return;
+    }
+
     const json = await res.json();
 
     if (json.status === 'success') {
@@ -51,7 +57,7 @@ async function buscarDatos() {
       alert("Error: " + json.msg);
     }
   } catch (err) {
-    document.getElementById('t-body').innerHTML = `<tr><td style="color: #e53935;">Error consultando la base de datos local.</td></tr>`;
+    document.getElementById('t-body').innerHTML = `<tr><td style="color: #e53935; text-align: center; padding: 20px;">Error conectando con el servidor.</td></tr>`;
   }
 }
 
@@ -64,11 +70,8 @@ function sortData(key) {
   }
 
   rawData.sort((a, b) => {
-    let valA = a[key];
-    let valB = b[key];
-
-    if (valA === null) valA = '';
-    if (valB === null) valB = '';
+    let valA = a[key] === null ? '' : a[key];
+    let valB = b[key] === null ? '' : b[key];
 
     if (typeof valA === 'string') valA = valA.toLowerCase();
     if (typeof valB === 'string') valB = valB.toLowerCase();
@@ -90,6 +93,7 @@ function renderTable() {
     thead.innerHTML = `<tr><th>Sin Resultados</th></tr>`;
     tbody.innerHTML = `<tr><td style="text-align: center; color: #5d7290; padding: 25px;">No se encontraron registros en la tabla <b>${tablaActual}</b>.</td></tr>`;
     document.getElementById('page-info').textContent = "Mostrando 0 de 0 registros";
+    // El sistema nativo deshabilita los botones. No es el RBAC.
     document.getElementById('btn-prev').disabled = true;
     document.getElementById('btn-next').disabled = true;
     return;

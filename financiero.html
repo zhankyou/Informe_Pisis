@@ -1,17 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <script>
-    if (localStorage.getItem('isAdmin') !== 'true') {
-        window.location.replace('/login');
-    }
-  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Módulo Financiero - INFORME APS</title>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/layout.css">
-  <script src="/static/js/layout.js"></script>
+  <script src="/static/js/layout.js?v=7.0"></script>
   <style>
     .card { background: var(--surface); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
     .tabs-nav { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
@@ -299,7 +294,7 @@
       </div>
     </div>
   </div>
-
-  <script src="/static/js/main_financiero.js"></script>
+  <script src="/static/js/rbac.js?v=7.0"></script>
+  <script src="/static/js/main_financiero.js?v=7.0"></script>
 </body>
 </html>
