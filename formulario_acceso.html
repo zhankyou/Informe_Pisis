@@ -92,9 +92,9 @@
                                 <label>Número de Documento</label>
                                 <input type="text" name="numero_documento" required pattern="\d{4,20}" title="4 a 20 dígitos numéricos">
                             </div>
-                            <div class="form-group"><label>Primer Nombre</label><input type="text" name="primer_nombre" id="pNombre" required class="up"></div>
+                            <div class="form-group"><label>Primer Nombre</label><input type="text" name="nombres" id="pNombre" required class="up"></div>
                             <div class="form-group"><label>Segundo Nombre</label><input type="text" name="segundo_nombre" id="sNombre" class="up"></div>
-                            <div class="form-group"><label>Primer Apellido</label><input type="text" name="primer_apellido" id="pApellido" required class="up"></div>
+                            <div class="form-group"><label>Primer Apellido</label><input type="text" name="apellidos" id="pApellido" required class="up"></div>
                             <div class="form-group"><label>Segundo Apellido</label><input type="text" name="segundo_apellido" id="sApellido" class="up"></div>
                             <div class="form-group" style="grid-column: 1 / -1;">
                                 <label>Nombre Completo (Autogenerado)</label>
@@ -111,8 +111,10 @@
                         <div class="form-section-title"><i class="fas fa-address-book"></i> 2. Contacto y Afiliación en Salud</div>
 
                         <div class="form-grid">
+                            <!-- Cambio de 'celular' a 'telefono' para coincidir con API -->
                             <div class="form-group">
-                                <label>Celular</label><input type="text" name="celular" required pattern="\d{10,20}" title="Mínimo 10 dígitos">
+                                <label>Celular</label>
+                                <input type="text" name="telefono" required pattern="\d{10,20}" title="Mínimo 10 dígitos">
                             </div>
                             <div class="form-group">
                                 <label>Correo Electrónico (Institucional o Personal)</label>
@@ -140,6 +142,16 @@
                         <div class="form-section-title"><i class="fas fa-briefcase"></i> 3. Información Contractual y Operativa</div>
 
                         <div class="form-grid">
+                            <!-- Nuevo campo para solicitar Rol del Sistema -->
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>Rol de Acceso Solicitado al Sistema</label>
+                                <select name="rol_solicitado" required>
+                                    <option value="">Seleccione el nivel de acceso requerido...</option>
+                                    <option value="Técnico/Operativo">Operativo (Técnico / Registro de Datos)</option>
+                                    <option value="Coordinador">Coordinador (Aprobación y Edición)</option>
+                                    <option value="Visualizador">Visualizador (Solo Lectura / Auditoría)</option>
+                                </select>
+                            </div>
                             <div class="form-group">
                                 <label>Programa</label>
                                 <select name="programa" required>
