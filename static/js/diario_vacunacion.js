@@ -1,4 +1,5 @@
-const isAdminCronograma = localStorage.getItem('isAdmin') === 'true';
+const rolActualDiario = (localStorage.getItem('rol_usuario') || sessionStorage.getItem('rol_usuario') || '').toLowerCase();
+const isAdminCronograma = rolActualDiario.includes('admin') || rolActualDiario.includes('coordinador') || localStorage.getItem('isAdmin') === 'true';
 let currentConfig = {};
 let dataDiaria = [];
 
@@ -129,7 +130,7 @@ async function cargarDiario() {
 }
 
 async function duplicarDiario() {
-    if (!isAdminCronograma) return window.location.replace('/login');
+    if (!isAdminCronograma) return alert("No tiene permisos para realizar esta acción.");
 
     const fechaOrigen = document.getElementById('fecha-origen-copy').value;
     const fechaDestino = document.getElementById('filtro-fecha').value;
@@ -157,6 +158,7 @@ async function duplicarDiario() {
 }
 
 function abrirFormConfig() {
+  if (!isAdminCronograma) return alert("No tiene permisos para realizar esta acción.");
   document.getElementById('form-vacunacion').style.display = 'none';
   document.getElementById('form-config-diario').style.display = 'block';
 
@@ -195,7 +197,7 @@ function abrirFormConfig() {
 
 async function guardarConfigDiario(e) {
   e.preventDefault();
-  if (!isAdminCronograma) return window.location.replace('/login');
+  if (!isAdminCronograma) return alert("No tiene permisos para realizar esta acción.");
 
   const payload = {
       fecha: document.getElementById('filtro-fecha').value,
@@ -232,7 +234,7 @@ async function guardarConfigDiario(e) {
 }
 
 function abrirFormDupla(index) {
-  if (!isAdminCronograma) return window.location.replace('/login');
+  if (!isAdminCronograma) return alert("No tiene permisos para realizar esta acción.");
   document.getElementById('form-config-diario').style.display = 'none';
   document.getElementById('form-vacunacion').style.display = 'block';
   document.getElementById('frm-dupla').reset();
@@ -287,7 +289,7 @@ function abrirFormDupla(index) {
 
 async function guardarDiario(e) {
   e.preventDefault();
-  if (!isAdminCronograma) return window.location.replace('/login');
+  if (!isAdminCronograma) return alert("No tiene permisos para realizar esta acción.");
 
   const payload = {
       id: document.getElementById('v-id').value || null,
@@ -327,7 +329,7 @@ async function guardarDiario(e) {
 }
 
 async function eliminarDupla(id) {
-  if (!isAdminCronograma) return window.location.replace('/login');
+  if (!isAdminCronograma) return alert("No tiene permisos para realizar esta acción.");
   if(!confirm("⚠️ ¿Desea eliminar definitivamente esta dupla?")) return;
   try {
     const res = await fetch(`/api/cronograma/diario/${id}`, { method: 'DELETE' });
