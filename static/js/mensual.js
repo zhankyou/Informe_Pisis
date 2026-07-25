@@ -1,4 +1,5 @@
-const isAdminMensual = localStorage.getItem('isAdmin') === 'true';
+const rolActualMensual = (localStorage.getItem('rol_usuario') || sessionStorage.getItem('rol_usuario') || '').toLowerCase();
+const isAdminMensual = rolActualMensual.includes('admin') || rolActualMensual.includes('coordinador') || localStorage.getItem('isAdmin') === 'true';
 let dataMensual = [];
 
 function initMesesMensual() {
@@ -64,7 +65,6 @@ async function cargarMensual() {
                 let equipoF = "N/A";
                 let territorioF = item.territorio_full;
 
-                // Separación estricta de la cadena "EQUIPO XX / TERRITORIO XX"
                 if (item.territorio_full.includes('/')) {
                     const parts = item.territorio_full.split('/');
                     equipoF = parts[0].trim().toUpperCase().replace('EQUIPO', 'EQ');
@@ -73,7 +73,6 @@ async function cargarMensual() {
                     equipoF = `EQ ${item.equipo_id}`;
                 }
 
-                // Extracción y formateo de hora operativa
                 const hi = item.hora_inicio ? item.hora_inicio.slice(0,5) : '';
                 const hf = item.hora_fin ? item.hora_fin.slice(0,5) : '';
                 const horarioStr = (hi && hf) ? `<br><strong style="color:var(--navy); font-size: 0.75rem;">⌚ ${hi} - ${hf}</strong>` : '';
@@ -107,7 +106,7 @@ async function cargarMensual() {
 }
 
 function abrirFormMensual() {
-    if (!isAdminMensual) return window.location.replace('/login');
+    if (!isAdminMensual) return alert("No tiene permisos para realizar esta acción.");
 
     document.getElementById('form-mensual').style.display = 'block';
     const mesVal = document.getElementById('filtro-mes').value;
@@ -131,7 +130,7 @@ function abrirFormMensual() {
 }
 
 function editarMensual(territorio_full, actividad, h_ini, h_fin, dias) {
-    if (!isAdminMensual) return window.location.replace('/login');
+    if (!isAdminMensual) return alert("No tiene permisos para realizar esta acción.");
     abrirFormMensual();
 
     const selAct = document.getElementById('f-actividad');
@@ -161,7 +160,7 @@ function editarMensual(territorio_full, actividad, h_ini, h_fin, dias) {
 
 async function guardarMensual(e) {
     e.preventDefault();
-    if (!isAdminMensual) return window.location.replace('/login');
+    if (!isAdminMensual) return alert("No tiene permisos para realizar esta acción.");
 
     const form = new FormData(e.target);
     const diasSeleccionados = form.getAll('dias');
@@ -195,7 +194,7 @@ async function guardarMensual(e) {
 }
 
 async function eliminarMensual(territorio, actividad) {
-    if (!isAdminMensual) return window.location.replace('/login');
+    if (!isAdminMensual) return alert("No tiene permisos para realizar esta acción.");
     if (!confirm(`⚠️ ¿Eliminar la programación de ${territorio} para la actividad seleccionada en este mes?`)) return;
 
     const mes = document.getElementById('filtro-mes').value;
