@@ -1,6 +1,6 @@
 Flask==3.0.0
 Flask-Cors==4.0.0
-lask-Limiter>=3.5.0
+Flask-Limiter>=3.5.0
 SQLAlchemy==2.0.23
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
