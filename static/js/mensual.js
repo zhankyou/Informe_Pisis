@@ -57,7 +57,10 @@ async function cargarMensual() {
                         dias: []
                     };
                 }
-                agrupado[key].dias.push(new Date(row.fecha).getDate());
+                
+                // FIX: Extracción estricta del día desde el string YYYY-MM-DD para evitar desfase UTC-5
+                const diaExtraido = parseInt(row.fecha.split('-')[2].substring(0, 2), 10);
+                agrupado[key].dias.push(diaExtraido);
             });
 
             let bodyHtml = "";
@@ -213,7 +216,34 @@ function exportarPDFMensual() {
     window.open(`/api/cronograma/mensual/pdf?mes=${mes}`, '_blank');
 }
 
+/* =========================================================================
+   PARCHE RBAC: HABILITAR CRUD PARA ADMINISTRADOR Y COORDINADOR
+   ========================================================================= */
+function aplicarPermisosCronograma() {
+    const rolActual = (localStorage.getItem('rol_usuario') || sessionStorage.getItem('rol_usuario') || '').toLowerCase().trim();
+    const controlesCRUD = document.querySelectorAll('.btn-add, .btn-edit, .btn-del, button[type="submit"], .form-container, form');
+    
+    if (rolActual.includes('admin') || rolActual.includes('coordinador') || localStorage.getItem('isAdmin') === 'true') {
+        controlesCRUD.forEach(el => {
+            el.style.display = '';
+            el.removeAttribute('disabled');
+        });
+    } else {
+        controlesCRUD.forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initMesesMensual();
     cargarMensual();
+    aplicarPermisosCronograma();
 });
+
+const originalFetchMensual = window.fetch;
+window.fetch = async function() {
+    const response = await originalFetchMensual.apply(this, arguments);
+    aplicarPermisosCronograma();
+    return response;
+};
