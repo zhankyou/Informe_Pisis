@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario de Acceso Unificado - ESE Municipal</title>
+    <title>Diligenciar Acceso Unificado - ESE Municipal</title>
     <link rel="stylesheet" href="/static/css/layout.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -44,7 +44,7 @@
 <body>
     <app-sidebar active-menu="formulario_acceso"></app-sidebar>
     <div class="main-content">
-        <app-topbar titulo="Módulo de Autorizaciones"></app-topbar>
+        <app-topbar titulo="Registro de Autorizaciones"></app-topbar>
 
         <div id="privacyModal" class="overlay-modal">
             <div class="modal-content">
@@ -256,7 +256,6 @@
             btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando forma segura...';
 
             const formData = new FormData(formElement);
-            // Aislar los datos del formulario ANTES del envío/reset para el generador de PDF
             const dataForPDF = Object.fromEntries(formData.entries());
 
             try {
