@@ -15,6 +15,7 @@ from modulos.Resolucion_2026 import registrar_modulos_2026
 from modulos.informe_entidades import informe_bp
 from modulos.acceso_db import procesar_y_guardar_solicitud
 from modulos.matriz_ponderacion import ponderacion_bp
+from modulos.notificaciones import notificar_nuevo_registro
 
 load_dotenv()
 os.environ["PGCLIENTENCODING"] = "utf-8"
@@ -106,7 +107,8 @@ def api_login():
             db_pass = usuario.get('password_hash') or usuario.get('password') or usuario.get('clave')
 
             if not db_pass:
-                return jsonify({"status": "error", "message": "Error de esquema: No se encontró columna de contraseña."}), 500
+                return jsonify(
+                    {"status": "error", "message": "Error de esquema: No se encontró columna de contraseña."}), 500
 
             is_valid = False
             if str(db_pass).startswith('pbkdf2:') or str(db_pass).startswith('scrypt:'):
@@ -135,7 +137,8 @@ def api_guardar_acceso():
     form_data = request.form.to_dict()
 
     if form_data.get('validacion_bot_oculta', '') != '':
-        return jsonify({"status": "error", "message": "Petición bloqueada por políticas de seguridad automatizada."}), 403
+        return jsonify(
+            {"status": "error", "message": "Petición bloqueada por políticas de seguridad automatizada."}), 403
 
     file_obj = request.files.get('seguridad_social')
     correo = str(form_data.get('correo', '')).lower().strip()
@@ -146,6 +149,21 @@ def api_guardar_acceso():
     exito = procesar_y_guardar_solicitud(form_data, file_obj)
 
     if exito:
+        # Construcción dinámica del nombre completo y detalles de notificación
+        nombre_completo = form_data.get('nombre_completo', '').strip()
+        if not nombre_completo:
+            nombre_completo = f"{form_data.get('nombres', '')} {form_data.get('apellidos', '')}".strip()
+
+        detalles = (
+            f"👤 *Nuevo Registro procesado por {nombre_completo}*\n"
+            f"📄 *Documento:* {form_data.get('numero_documento', 'N/A')}\n"
+            f"🔑 *Rol Solicitado:* {form_data.get('rol_solicitado', 'N/A')}\n"
+            f"📱 *Teléfono:* {form_data.get('telefono', 'N/A')}\n"
+            f"📧 *Correo:* {correo}"
+        )
+
+        notificar_nuevo_registro("Formulario de Acceso a Plataforma", detalles)
+
         return jsonify({"status": "success", "message": "Solicitud registrada exitosamente."})
     else:
         return jsonify({"status": "error", "message": "Error interno al guardar la solicitud."}), 500
