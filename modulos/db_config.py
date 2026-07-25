@@ -27,11 +27,13 @@ def verificar_crear_bd_local():
         logging.warning(f"⚠️ No se pudo verificar la creación de la DB local: {e}")
 
 def get_engine(admin=False):
+    # Autodetección de Render o validación manual
+    is_render = os.getenv("RENDER") == "true"
     ambiente = os.getenv("AMBIENTE", "local").strip().lower()
 
-    if ambiente == "produccion":
+    if is_render or ambiente == "produccion":
         db_url = os.getenv("DATABASE_URL")
-
+        
         # Prioridad 1: Uso de URI completa (Render/Heroku/Aiven URI)
         if db_url:
             if db_url.startswith("postgres://"):
@@ -39,12 +41,12 @@ def get_engine(admin=False):
             # Asegurar soporte SSL requerido por Aiven
             if "sslmode=require" not in db_url:
                 db_url += "?sslmode=require" if "?" not in db_url else "&sslmode=require"
-
+                
             return create_engine(
-                db_url,
-                pool_size=10,
-                max_overflow=20,
-                pool_pre_ping=True,
+                db_url, 
+                pool_size=10, 
+                max_overflow=20, 
+                pool_pre_ping=True, 
                 pool_recycle=300
             )
 
@@ -57,10 +59,10 @@ def get_engine(admin=False):
 
         cadena = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}?sslmode=require&client_encoding=utf8"
         return create_engine(
-            cadena,
-            pool_size=10,
-            max_overflow=20,
-            pool_pre_ping=True,
+            cadena, 
+            pool_size=10, 
+            max_overflow=20, 
+            pool_pre_ping=True, 
             pool_recycle=300
         )
 
