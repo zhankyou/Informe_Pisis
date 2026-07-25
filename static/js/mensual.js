@@ -1,5 +1,8 @@
-const rolActualMensual = (localStorage.getItem('rol_usuario') || sessionStorage.getItem('rol_usuario') || '').toLowerCase();
-const isAdminMensual = rolActualMensual.includes('admin') || rolActualMensual.includes('coordinador') || localStorage.getItem('isAdmin') === 'true';
+function hasPrivileges() {
+    const r = String(localStorage.getItem('rol') || localStorage.getItem('rol_usuario') || sessionStorage.getItem('rol_usuario') || '').toLowerCase();
+    return r.includes('admin') || r.includes('coordinador') || localStorage.getItem('isAdmin') === 'true';
+}
+
 let dataMensual = [];
 
 function initMesesMensual() {
@@ -17,6 +20,8 @@ function initMesesMensual() {
 async function cargarMensual() {
     const mes = document.getElementById('filtro-mes').value;
     const btnProg = document.getElementById('btn-prog-mensual');
+    const isAdminMensual = hasPrivileges();
+
     if(btnProg) btnProg.style.display = isAdminMensual ? 'block' : 'none';
 
     try {
@@ -57,8 +62,8 @@ async function cargarMensual() {
                         dias: []
                     };
                 }
-                
-                // FIX: Extracción estricta del día desde el string YYYY-MM-DD para evitar desfase UTC-5
+
+                // Extracción estricta del día para evadir desfase UTC-5
                 const diaExtraido = parseInt(row.fecha.split('-')[2].substring(0, 2), 10);
                 agrupado[key].dias.push(diaExtraido);
             });
@@ -109,7 +114,7 @@ async function cargarMensual() {
 }
 
 function abrirFormMensual() {
-    if (!isAdminMensual) return alert("No tiene permisos para realizar esta acción.");
+    if (!hasPrivileges()) return alert("No tiene permisos para realizar esta acción.");
 
     document.getElementById('form-mensual').style.display = 'block';
     const mesVal = document.getElementById('filtro-mes').value;
@@ -133,7 +138,7 @@ function abrirFormMensual() {
 }
 
 function editarMensual(territorio_full, actividad, h_ini, h_fin, dias) {
-    if (!isAdminMensual) return alert("No tiene permisos para realizar esta acción.");
+    if (!hasPrivileges()) return alert("No tiene permisos para realizar esta acción.");
     abrirFormMensual();
 
     const selAct = document.getElementById('f-actividad');
@@ -163,7 +168,7 @@ function editarMensual(territorio_full, actividad, h_ini, h_fin, dias) {
 
 async function guardarMensual(e) {
     e.preventDefault();
-    if (!isAdminMensual) return alert("No tiene permisos para realizar esta acción.");
+    if (!hasPrivileges()) return alert("No tiene permisos para realizar esta acción.");
 
     const form = new FormData(e.target);
     const diasSeleccionados = form.getAll('dias');
@@ -197,7 +202,7 @@ async function guardarMensual(e) {
 }
 
 async function eliminarMensual(territorio, actividad) {
-    if (!isAdminMensual) return alert("No tiene permisos para realizar esta acción.");
+    if (!hasPrivileges()) return alert("No tiene permisos para realizar esta acción.");
     if (!confirm(`⚠️ ¿Eliminar la programación de ${territorio} para la actividad seleccionada en este mes?`)) return;
 
     const mes = document.getElementById('filtro-mes').value;
@@ -216,34 +221,7 @@ function exportarPDFMensual() {
     window.open(`/api/cronograma/mensual/pdf?mes=${mes}`, '_blank');
 }
 
-/* =========================================================================
-   PARCHE RBAC: HABILITAR CRUD PARA ADMINISTRADOR Y COORDINADOR
-   ========================================================================= */
-function aplicarPermisosCronograma() {
-    const rolActual = (localStorage.getItem('rol_usuario') || sessionStorage.getItem('rol_usuario') || '').toLowerCase().trim();
-    const controlesCRUD = document.querySelectorAll('.btn-add, .btn-edit, .btn-del, button[type="submit"], .form-container, form');
-    
-    if (rolActual.includes('admin') || rolActual.includes('coordinador') || localStorage.getItem('isAdmin') === 'true') {
-        controlesCRUD.forEach(el => {
-            el.style.display = '';
-            el.removeAttribute('disabled');
-        });
-    } else {
-        controlesCRUD.forEach(el => {
-            el.style.display = 'none';
-        });
-    }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     initMesesMensual();
     cargarMensual();
-    aplicarPermisosCronograma();
 });
-
-const originalFetchMensual = window.fetch;
-window.fetch = async function() {
-    const response = await originalFetchMensual.apply(this, arguments);
-    aplicarPermisosCronograma();
-    return response;
-};
