@@ -2,7 +2,7 @@
 import os
 import logging
 import secrets
-from flask import Flask, send_from_directory, redirect, request, jsonify
+from flask import Flask, send_from_directory, redirect, request, jsonify, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
 from flask_limiter import Limiter
@@ -16,6 +16,7 @@ from modulos.informe_entidades import informe_bp
 from modulos.acceso_db import procesar_y_guardar_solicitud
 from modulos.matriz_ponderacion import ponderacion_bp
 from modulos.notificaciones import notificar_nuevo_registro
+from modulos.pdf_acceso import generar_documento_pdf
 
 load_dotenv()
 os.environ["PGCLIENTENCODING"] = "utf-8"
@@ -107,8 +108,7 @@ def api_login():
             db_pass = usuario.get('password_hash') or usuario.get('password') or usuario.get('clave')
 
             if not db_pass:
-                return jsonify(
-                    {"status": "error", "message": "Error de esquema: No se encontró columna de contraseña."}), 500
+                return jsonify({"status": "error", "message": "Error de esquema: No se encontró columna de contraseña."}), 500
 
             is_valid = False
             if str(db_pass).startswith('pbkdf2:') or str(db_pass).startswith('scrypt:'):
@@ -137,8 +137,7 @@ def api_guardar_acceso():
     form_data = request.form.to_dict()
 
     if form_data.get('validacion_bot_oculta', '') != '':
-        return jsonify(
-            {"status": "error", "message": "Petición bloqueada por políticas de seguridad automatizada."}), 403
+        return jsonify({"status": "error", "message": "Petición bloqueada por políticas de seguridad automatizada."}), 403
 
     file_obj = request.files.get('seguridad_social')
     correo = str(form_data.get('correo', '')).lower().strip()
@@ -149,7 +148,6 @@ def api_guardar_acceso():
     exito = procesar_y_guardar_solicitud(form_data, file_obj)
 
     if exito:
-        # Construcción dinámica del nombre completo y detalles de notificación
         nombre_completo = form_data.get('nombre_completo', '').strip()
         if not nombre_completo:
             nombre_completo = f"{form_data.get('nombres', '')} {form_data.get('apellidos', '')}".strip()
@@ -161,12 +159,29 @@ def api_guardar_acceso():
             f"📱 *Teléfono:* {form_data.get('telefono', 'N/A')}\n"
             f"📧 *Correo:* {correo}"
         )
-
         notificar_nuevo_registro("Formulario de Acceso a Plataforma", detalles)
-
         return jsonify({"status": "success", "message": "Solicitud registrada exitosamente."})
     else:
         return jsonify({"status": "error", "message": "Error interno al guardar la solicitud."}), 500
+
+
+@app.route('/api/descargar_pdf_acceso', methods=['POST'])
+@limiter.limit("20 per hour")
+def api_descargar_pdf_acceso():
+    datos = request.json
+    if not datos:
+        return jsonify({"status": "error", "message": "Datos no proporcionados."}), 400
+
+    try:
+        pdf_bytes = generar_documento_pdf(datos)
+        return Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={'Content-Disposition': f"attachment;filename=Solicitud_Acceso_{datos.get('numero_documento', '000')}.pdf"}
+        )
+    except Exception as e:
+        logging.error(f"Falla al generar PDF: {e}")
+        return jsonify({"status": "error", "message": "Error interno generando PDF."}), 500
 
 
 @app.errorhandler(429)
