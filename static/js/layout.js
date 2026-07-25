@@ -6,6 +6,9 @@ class AppSidebar extends HTMLElement {
     const rolRaw = sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario') || 'publico';
     const rol = rolRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
+    // Validación RBAC para el menú de consultas
+    const isAdmin = rol.includes('admin') || rol.includes('coordinador') || localStorage.getItem('isAdmin') === 'true';
+
     let adminMenus = '';
     if (rol !== 'publico') {
         adminMenus = `
@@ -19,6 +22,11 @@ class AppSidebar extends HTMLElement {
         `;
     }
 
+    let consultaAutorizaciones = '';
+    if (isAdmin) {
+        consultaAutorizaciones = `<a href="/consulta_acceso" class="sub-item ${activeMenu === 'consulta_acceso' ? 'active' : ''}">↳ 🔍 Consulta Autorizaciones</a>`;
+    }
+
     this.innerHTML = `
       <div class="sidebar-internal">
         <div class="brand">
@@ -28,8 +36,13 @@ class AppSidebar extends HTMLElement {
         <div class="nav-menu">
           <a href="/" class="nav-item ${activeMenu === 'dashboard' ? 'active' : ''}">📊 Dashboard General</a>
           <a href="/informe" class="nav-item ${activeMenu === 'informe' ? 'active' : ''}">📈 Informe Entidades</a>
-          <a href="/formulario_acceso" class="nav-item ${activeMenu === 'formulario_acceso' ? 'active' : ''}">📋 Formulario de Acceso</a>
+          
+          <div class="nav-item" style="margin-top: 15px; font-weight: 700; color: white;">📋 Autorizaciones PISIS</div>
+          <a href="/formulario_acceso" class="sub-item ${activeMenu === 'formulario_acceso' ? 'active' : ''}">📝 Diligenciar Acceso</a>
+          ${consultaAutorizaciones}
+
           ${adminMenus}
+          
           <div class="nav-item" style="margin-top: 15px; font-weight: 700; color: white;">📅 Cronograma (EBS)</div>
           <a href="/cronograma" class="sub-item ${activeMenu === 'cronograma' ? 'active' : ''}">📍 Programación Operativa</a>
         </div>
