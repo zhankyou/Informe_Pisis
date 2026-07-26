@@ -1,3 +1,7 @@
+// ==============================================================================
+// COMPONENTES WEB - SISTEMA INFORME APS
+// ==============================================================================
+
 class AppSidebar extends HTMLElement {
   connectedCallback() {
     const activeMenu = this.getAttribute('active-menu') || '';
@@ -10,7 +14,12 @@ class AppSidebar extends HTMLElement {
     const isAdmin = rol.includes('admin') || rol.includes('coordinador') || localStorage.getItem('isAdmin') === 'true';
 
     let adminMenus = '';
+    let adminComponentes = '';
+
     if (rol !== 'publico') {
+        // Enlace exclusivo para personal autenticado
+        adminComponentes = `<a href="/indicadores_componentes" class="sub-item ${activeMenu === 'indicadores_componentes' ? 'active' : ''}">↳ Indicadores Componentes</a>`;
+
         adminMenus = `
           <div class="nav-item" style="margin-top: 15px; font-weight: 700; color: white;">📁 Resolución SER124DREC</div>
           <a href="/poblacional" class="sub-item ${activeMenu === 'poblacional' ? 'active' : ''}">📄 Poblacional (SI-APS)</a>
@@ -40,6 +49,10 @@ class AppSidebar extends HTMLElement {
           <div class="nav-item" style="margin-top: 15px; font-weight: 700; color: white;">📋 Autorizaciones PISIS</div>
           <a href="/formulario_acceso" class="sub-item ${activeMenu === 'formulario_acceso' ? 'active' : ''}">📝 Diligenciar Acceso</a>
           ${consultaAutorizaciones}
+
+          <div class="nav-item" style="margin-top: 15px; font-weight: 700; color: white;">📈 INDICADORES APS</div>
+          <a href="/indicadores_cobertura" class="sub-item ${activeMenu === 'indicadores_cobertura' ? 'active' : ''}">↳ Indicadores Cobertura</a>
+          ${adminComponentes}
 
           ${adminMenus}
           
