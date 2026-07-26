@@ -4,7 +4,6 @@ from flask import Blueprint, send_from_directory, redirect
 
 vistas_bp = Blueprint('vistas', __name__)
 
-# Resuelve el directorio raíz del proyecto dinámicamente
 DIR_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 @vistas_bp.route("/")
@@ -40,6 +39,8 @@ def formulario_acceso(): return send_from_directory(DIR_BASE, "formulario_acceso
 @vistas_bp.route('/consulta_acceso')
 def consulta_acceso(): return send_from_directory(DIR_BASE, "consulta_acceso.html")
 
-@vistas_bp.route("/static/img/<path:filename>")
-def serve_img(filename):
-    return send_from_directory(os.path.join(DIR_BASE, "static", "img"), filename)
+@vistas_bp.route('/indicadores_cobertura')
+def indicadores_cobertura(): return send_from_directory(DIR_BASE, "indicadores_cobertura.html")
+
+@vistas_bp.route('/indicadores_componentes')
+def indicadores_componentes(): return send_from_directory(DIR_BASE, "indicadores_componentes.html")
