@@ -22,6 +22,7 @@ load_dotenv()
 os.environ["PGCLIENTENCODING"] = "utf-8"
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | [%(levelname)s] | %(message)s')
 
+# Flask configura automáticamente el enrutamiento de la carpeta estática raíz
 app = Flask(__name__)
 CORS(app)
 
