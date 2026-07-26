@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indicadores de Cobertura - INFORME APS</title>
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        html, body { overflow-y: auto !important; height: 100% !important; background-color: #f4f7f6; }
+        .main-content { padding-bottom: 50px; }
+        .toolbar { display: flex; gap: 15px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin: 20px; align-items: flex-end; flex-wrap: wrap; border-top: 4px solid #00b09b; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.85rem; font-weight: bold; color: #004b87; margin-bottom: 5px; }
+        .form-group select, .form-group input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; min-width: 150px; }
+        .form-group select:disabled { background-color: #e9ecef; cursor: not-allowed; }
+        .btn-action { background: #004b87; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; height: 40px; transition: 0.2s; }
+        .btn-action:hover { background: #003366; }
+        .btn-action:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-warning { background: #f59e0b; color: #fff; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-info { background: #17a2b8; color: #fff; }
+        .btn-info:hover { background: #117a8b; }
+        .btn-danger { background: #dc3545; color: #fff; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-secondary { background: #6c757d; color: #fff; }
+        .btn-secondary:hover { background: #5a6268; }
+
+        .table-container { margin: 0 20px; overflow-x: auto; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-radius: 8px; border: 1px solid #e0e0e0; padding-bottom: 80px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: #004b87; color: white; padding: 15px 12px; text-align: center; border: 1px solid #003366; position: sticky; top: 0; z-index: 10; text-transform: uppercase; letter-spacing: 0.5px; }
+        th:hover { z-index: 20; }
+        td { padding: 12px 10px; border: 1px solid #e0e0e0; vertical-align: middle; }
+        tr:hover { background-color: #f8fbff; }
+
+        .td-center { text-align: center; }
+        .td-justify { text-align: justify; line-height: 1.4; }
+
+        .section-title { background: linear-gradient(90deg, #00b09b 0%, #007acc 100%); color: white !important; font-size: 1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; padding: 15px !important; border: none !important; }
+        .section-title i { margin-right: 8px; color: #fffae6; }
+
+        .input-num { width: 65px; padding: 8px 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; background: #fffae6; font-weight: bold; font-size: 0.9rem; position: relative; z-index: 1; }
+        .input-num:disabled { background: #f0f0f0; border-color: #ddd; color: #888; }
+        .input-num:focus { outline: 2px solid #00b09b; background: #fff; z-index: 2; }
+
+        .input-obs { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; resize: vertical; }
+        .input-obs:disabled { background: #f0f0f0; border-color: #ddd; color: #888; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-box { background: white; padding: 35px; border-radius: 12px; text-align: center; width: 380px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-top: 5px solid #00b09b; }
+        .modal-box input { width: 100%; padding: 15px; text-align: center; font-size: 1.1rem; letter-spacing: 2px; margin: 20px 0; border: 2px solid #00b09b; border-radius: 6px; outline: none; }
+        .modal-box input:focus { border-color: #007acc; box-shadow: 0 0 8px rgba(0,176,155,0.3); }
+
+        .tooltip { position: relative; display: inline-block; cursor: help; margin-left: 5px; color: #ffcc00; }
+        .tooltip .tooltiptext {
+            visibility: hidden; width: 250px; background-color: #1a2840; color: #fff; text-align: center;
+            border-radius: 6px; padding: 12px; position: absolute; z-index: 999999;
+            top: 150%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s;
+            font-size: 0.8rem; font-weight: 500; text-transform: none; letter-spacing: normal;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5); line-height: 1.3;
+        }
+        .tooltip .tooltiptext::after {
+            content: ""; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            border-width: 7px; border-style: solid; border-color: transparent transparent #1a2840 transparent;
+        }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body>
+    <app-sidebar active-menu="indicadores_cobertura"></app-sidebar>
+    <div class="main-content">
+        <app-topbar titulo="Indicadores de Cobertura"></app-topbar>
+
+        <div class="toolbar">
+            <div class="form-group">
+                <label>Territorio</label>
+                <select id="selTerritorio">
+                    <option value="">Seleccione...</option>
+                    <script>
+                        for(let i=1; i<=64; i++){
+                            let t = i < 10 ? 'T0'+i : 'T'+i;
+                            document.write(`<option value="${t}">${t}</option>`);
+                        }
+                    </script>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Mes de Reporte</label>
+                <select id="selMes">
+                    <option value="">Seleccione...</option>
+                    <option value="ENERO">Enero</option><option value="FEBRERO">Febrero</option>
+                    <option value="MARZO">Marzo</option><option value="ABRIL">Abril</option>
+                    <option value="MAYO">Mayo</option><option value="JUNIO">Junio</option>
+                    <option value="JULIO">Julio</option><option value="AGOSTO">Agosto</option>
+                    <option value="SEPTIEMBRE">Septiembre</option><option value="OCTUBRE">Octubre</option>
+                    <option value="NOVIEMBRE">Noviembre</option><option value="DICIEMBRE">Diciembre</option>
+                </select>
+            </div>
+            <button class="btn-action btn-info" onclick="cargarDatos()"><i class="fas fa-search"></i> Consultar</button>
+            <button class="btn-action btn-danger" onclick="exportarPDF()"><i class="fas fa-file-pdf"></i> Descargar PDF</button>
+            <button class="btn-action" id="btnHabilitar" onclick="abrirModalAuth()"><i class="fas fa-unlock-alt"></i> Habilitar Edición</button>
+            <button class="btn-action btn-secondary" id="btnCancelarEdicion" style="display:none;" onclick="cancelarEdicion()"><i class="fas fa-times"></i> Cancelar Edición</button>
+            <button class="btn-action btn-warning" id="btnAdminUnlock" style="display:none;" onclick="abrirModalDesbloqueo()"><i class="fas fa-key"></i> Desbloquear Territorio</button>
+            <button class="btn-action" id="btnGuardar" style="background: #28a745;" onclick="guardarDatos()" disabled><i class="fas fa-save"></i> Guardar Cambios</button>
+        </div>
+
+        <div class="table-container">
+            <table id="tablaIndicadores">
+                <thead>
+                    <tr>
+                        <th width="3%">N°</th>
+                        <th width="15%">INDICADOR</th>
+                        <th width="22%">DESCRIPCIÓN DEL INDICADOR</th>
+                        <th width="20%">FÓRMULA DE CÁLCULO</th>
+                        <th width="12%">FUENTE DE VERIFICACIÓN</th>
+                        <th width="6%">N <div class="tooltip"><i class="fas fa-info-circle"></i><span class="tooltiptext">Corresponde a las personas intervenidas por los equipos</span></div></th>
+                        <th width="6%">D <div class="tooltip"><i class="fas fa-info-circle"></i><span class="tooltiptext">Corresponde a las personas encontradas en las caracterizaciones</span></div></th>
+                        <th width="6%">%</th>
+                        <th width="10%">OBSERVACIONES</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyIndicadores"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL DE AUTENTICACIÓN TÉCNICA -->
+    <div class="modal-overlay" id="modalAuth">
+        <div class="modal-box">
+            <h3 style="color: #004b87; margin-top: 0; font-size: 1.4rem;">Código de Seguridad</h3>
+            <p style="font-size: 0.9rem; color: #555; margin-bottom: 10px;">Ingrese el PIN de 8 dígitos correspondiente a su territorio.</p>
+            <input type="password" id="inputCodigo" maxlength="8" placeholder="••••••••">
+            <button class="btn-action" style="width: 100%; margin-bottom: 10px; background: #00b09b;" onclick="validarCodigo()">Validar Accesos</button>
+            <button class="btn-action" style="width: 100%; background: #dc3545;" onclick="cerrarModalAuth()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE DESBLOQUEO ADMINISTRATIVO -->
+    <div class="modal-overlay" id="modalDesbloqueo">
+        <div class="modal-box">
+            <h3 style="color: #f59e0b; margin-top: 0; font-size: 1.4rem;">Desbloqueo Administrativo</h3>
+            <p style="font-size: 0.9rem; color: #555; margin-bottom: 10px;">Ingrese <b>su contraseña personal</b> para rehabilitar este territorio.</p>
+            <input type="password" id="inputCodigoAdmin" placeholder="Contraseña de Administrador">
+            <button class="btn-action btn-warning" style="width: 100%; margin-bottom: 10px;" onclick="ejecutarDesbloqueo()">Desbloquear Territorio</button>
+            <button class="btn-action" style="width: 100%; background: #dc3545;" onclick="cerrarModalDesbloqueo()">Cancelar</button>
+        </div>
+    </div>
+
+    <script src="/static/js/layout.js"></script>
+    <script>
+        let modoEdicion = false;
+        let territorioAutenticado = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderizarTabla();
+            const rolActual = String(sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario') || '').toLowerCase();
+            if (rolActual.includes('admin') || rolActual.includes('coordinador')) {
+                document.getElementById('btnAdminUnlock').style.display = 'inline-block';
+            }
+        });
+
+        const seccionesIndicadores = {
+            1: "INDICADORES DE ATENCIÓN A GESTANTES",
+            6: "COBERTURAS DE ATENCIÓN POR MOMENTO DE CURSO DE VIDA",
+            12: "INDICADORES DE DETECCIÓN TEMPRANA DE CÁNCER",
+            15: "INDICADORES DEL PROGRAMA AMPLIADO DE INMUNIZACIONES – PAI"
+        };
+
+        const baseIndicadores = [
+            ["Proporción de gestantes con captación temprana al control prenatal", "Mide el porcentaje de gestantes que ingresan al control prenatal antes de las 12 semanas de gestación, en relación con el total de gestantes identificadas por los EBS en el territorio.", "(N.° de gestantes con primera consulta prenatal antes de la semana 10 / N.° total de gestantes identificadas por los EBS) × 100", "RIPS – SI-APS componente poblacional / Resolución 3280 de 2018"],
+            ["Proporción de gestantes con tamizaje para VIH, Sífilis y Hepatitis B", "Porcentaje de gestantes a quienes los EBS gestionaron o realizaron los tres tamizajes simultáneos (VIH, Sífilis y Hepatitis B) durante el período de seguimiento.", "(N.° de gestantes con tamizaje simultáneo para VIH, Sífilis y Hepatitis B / N.° total de gestantes identificadas por los EBS) × 100", "RIPS – SI-APS / Resolución 3280 de 2018"],
+            ["Proporción de gestantes con tamizaje para VIH", "Porcentaje de gestantes identificadas por los EBS que cuentan con prueba de tamizaje para VIH durante la gestación.", "(N.° de gestantes con tamizaje para VIH / N.° total de gestantes identificadas por los EBS) × 100", "RIPS – SI-APS / Resolución 3280 de 2018"],
+            ["Proporción de gestantes con tamizaje para Sífilis", "Porcentaje de gestantes identificadas por los EBS que cuentan con prueba de tamizaje para Sífilis durante la gestación.", "(N.° de gestantes con tamizaje para Sífilis / N.° total de gestantes identificadas por los EBS) × 100", "RIPS – SI-APS / Resolución 3280 de 2018"],
+            ["Proporción de gestantes con tamizaje para Hepatitis B", "Porcentaje de gestantes identificadas por los EBS que cuentan con prueba de tamizaje para Hepatitis B durante la gestación.", "(N.° de gestantes con tamizaje para Hepatitis B / N.° total de gestantes identificadas por los EBS) × 100", "RIPS – SI-APS / Resolución 3280 de 2018"],
+            ["Cobertura de niñas y niños con atención por enfermería, medicina general o especializada en pediatría o medicina familiar – Primera infancia", "Porcentaje de niñas y niños en primera infancia (0 a 5 años) del territorio a cargo de los EBS que recibieron atención por los perfiles definidos.", "(N.° de niñas y niños de 0 a 5 años con atención según esquema / N.° total de niñas y niños de 0 a 5 años identificados) × 100", "RIPS – SI-APS componente poblacional / Resolución 3280 de 2018"],
+            ["Cobertura de niñas y niños con atención por enfermería, medicina general o especializada en pediatría o medicina familiar – Infancia", "Porcentaje de niñas y niños en infancia (6 a 11 años) del territorio a cargo de los EBS que recibieron atención.", "(N.° de niñas y niños de 6 a 11 años con atención según esquema / N.° total de niñas y niños de 6 a 11 años identificados) × 100", "RIPS – SI-APS componente poblacional / Resolución 3280 de 2018"],
+            ["Cobertura de adolescentes con atención por enfermería, medicina general o medicina familiar", "Porcentaje de adolescentes (12 a 17 años) del territorio a cargo de los EBS que recibieron atención.", "(N.° de adolescentes de 12 a 17 años con atención / N.° total de adolescentes de 12 a 17 años identificados) × 100", "RIPS – SI-APS componente poblacional / Resolución 3280 de 2018"],
+            ["Cobertura de jóvenes con atención por medicina general o medicina familiar", "Porcentaje de jóvenes (18 a 28 años) del territorio a cargo de los EBS que recibieron atención.", "(N.° de jóvenes de 18 a 28 años con atención / N.° total de jóvenes de 18 a 28 años identificados) × 100", "RIPS – SI-APS componente poblacional / Resolución 3280 de 2018"],
+            ["Cobertura de adultos con atención por medicina general o medicina familiar", "Porcentaje de personas adultas (29 a 59 años) del territorio a cargo de los EBS que recibieron atención.", "(N.° de adultos de 29 a 59 años con atención / N.° total de adults de 29 a 59 años identificados) × 100", "RIPS – SI-APS componente poblacional / Resolución 3280 de 2018"],
+            ["Cobertura de personas adultas mayores con atención por medicina general o medicina familiar", "Porcentaje de personas adultas mayores (60 años o más) del territorio a cargo de los EBS que recibieron atención.", "(N.° de adultos mayores de 60 años o más con atención / N.° total de adultos mayores identificados) × 100", "RIPS – SI-APS componente poblacional / Resolución 3280 de 2018"],
+            ["Proporción de mujeres entre 25 y 65 años tamizadas para cáncer de cuello uterino", "Porcentaje de mujeres de 25 a 65 años identificadas por los EBS que tienen registro de tamizaje en el período.", "(N.° de mujeres de 25 a 65 años con tamizaje / N.° total de mujeres de 25 a 65 años identificadas) × 100", "RIPS – SI-APS / Resolución 3280 de 2018"],
+            ["Proporción de mujeres entre 50 y 69 años tamizadas para cáncer de mama", "Porcentaje de mujeres de 50 a 69 años identificadas por los EBS que cuentan con mamografía de tamizaje en los dos años previos.", "(N.° de mujeres de 50 a 69 años con mamografía / N.° total de mujeres de 50 a 69 años identificadas) × 100", "RIPS – SI-APS / Resolución 3280 de 2018"],
+            ["Proporción de hombres mayores de 50 años con tamizaje de oportunidad para cáncer de próstata", "Porcentaje de hombres mayores de 50 años identificados por los EBS a quienes se realizó tamizaje combinado de PSA y tacto rectal.", "(N.° de hombres > 50 años con tamizaje combinado / N.° total de hombres > 50 años identificados) × 100", "RIPS – SI-APS / Resolución 3280 de 2018"],
+            ["Cobertura de vacunación con BCG en recién nacidos", "Porcentaje de recién nacidos vivos identificados por los EBS que tienen registro de vacuna BCG aplicada.", "(N.° de recién nacidos con BCG aplicada / N.° total de recién nacidos vivos identificados) × 100", "PAIWEB / SI-APS"],
+            ["Cobertura de tercera dosis de Pentavalente en menores de 1 año", "Porcentaje de niños y niñas menores de 1 año identificados por los EBS que tienen esquema completo de Pentavalente.", "(N.° de menores de 1 año con 3 dosis de Pentavalente / N.° total de menores de 1 año identificados) × 100", "PAIWEB / SI-APS"],
+            ["Cobertura de Triple Viral (SRP) en niños de 1 año", "Porcentaje de niños y niñas de 1 año de edad identificados por los EBS que tienen registro de vacuna Triple Viral.", "(N.° de niños de 1 año con vacuna Triple Viral / N.° total de niños de 1 año identificados) × 100", "PAIWEB / SI-APS"],
+            ["Cobertura de Primer Refuerzo (DPT y Polio) a los 18 meses", "Porcentaje de niños y niñas de 18 meses identificados por los EBS que tienen aplicado el primer refuerzo de DPT y Polio.", "(N.° de niños de 18 meses con primer refuerzo DPT y Polio / N.° total de niños de 18 meses identificados) × 100", "PAIWEB / SI-APS"],
+            ["Cobertura de Segundo Refuerzo (DPT, Polio y SRP) a los 5 años", "Porcentaje de niños y niñas de 5 años identificados por los EBS que tienen aplicado el segundo refuerzo de DPT, Polio y Triple Viral.", "(N.° de niños de 5 años con segundo refuerzo / N.° total de niños de 5 años identificados) × 100", "PAIWEB / SI-APS"],
+            ["Cobertura de Vacuna contra el Virus del Papiloma Humano (VPH)", "Porcentaje de niñas y niños en el grupo de edad objetivo identificados por los EBS que cuentan con esquema completo de VPH.", "(N.° de personas en grupo objetivo con esquema completo VPH / N.° total de personas en grupo objetivo identificadas) × 100", "PAIWEB / SI-APS"],
+            ["Cobertura de vacunación con Toxoide Tetánico/Diftérico (Td) en mujeres en edad fértil (MEF)", "Porcentaje de mujeres en edad fértil (10 a 49 años) identificadas por los EBS que tienen esquema vigente de vacuna Td.", "(N.° de MEF de 10 a 49 años con esquema Td vigente / N.° total de MEF de 10 a 49 años identificadas) × 100", "PAIWEB / SI-APS"]
+        ];
+
+        function renderizarTabla() {
+            const tbody = document.getElementById('tbodyIndicadores');
+            tbody.innerHTML = '';
+            baseIndicadores.forEach((ind, idx) => {
+                const id = idx + 1;
+
+                if (seccionesIndicadores[id]) {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td colspan="9" class="section-title">
+                                <i class="fas fa-layer-group"></i> ${seccionesIndicadores[id]}
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="td-center"><strong>${id}</strong></td>
+                        <td class="td-justify"><strong style="color: #004b87;">${ind[0]}</strong></td>
+                        <td class="td-justify" style="color: #444;">${ind[1]}</td>
+                        <td class="td-justify" style="color: #17a2b8; font-family: monospace; font-size: 0.8rem; background: #f8fbff; padding: 10px;">${ind[2]}</td>
+                        <td class="td-center" style="font-size:0.75rem; color: #666;">${ind[3]}</td>
+                        <td class="td-center"><input type="number" id="num_${id}" class="input-num calc-input" disabled oninput="calcularPorcentaje(${id})"></td>
+                        <td class="td-center"><input type="number" id="den_${id}" class="input-num calc-input" disabled oninput="calcularPorcentaje(${id})"></td>
+                        <td class="td-center" style="font-weight:bold; color:#d9534f; font-size: 1.1rem;" id="porc_${id}">0%</td>
+                        <td class="td-center"><textarea id="obs_${id}" class="input-obs" rows="3" maxlength="500" disabled placeholder="Agregar observación..."></textarea></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function calcularPorcentaje(id) {
+            const num = parseFloat(document.getElementById(`num_${id}`).value) || 0;
+            const den = parseFloat(document.getElementById(`den_${id}`).value) || 0;
+            const porcField = document.getElementById(`porc_${id}`);
+            if(den > 0) {
+                const porc = ((num / den) * 100).toFixed(1);
+                porcField.innerText = `${porc}%`;
+                porcField.style.color = porc >= 80 ? '#28a745' : (porc >= 50 ? '#f59e0b' : '#d9534f');
+            } else {
+                porcField.innerText = '0%';
+                porcField.style.color = '#d9534f';
+            }
+        }
+
+        function abrirModalAuth() {
+            const terr = document.getElementById('selTerritorio').value;
+            const mes = document.getElementById('selMes').value;
+            if(!terr || !mes) return alert("Seleccione Territorio y Mes antes de habilitar la edición.");
+            document.getElementById('modalAuth').style.display = 'flex';
+            document.getElementById('inputCodigo').value = '';
+        }
+        function cerrarModalAuth() { document.getElementById('modalAuth').style.display = 'none'; }
+
+        function abrirModalDesbloqueo() {
+            const terr = document.getElementById('selTerritorio').value;
+            if(!terr) return alert("Seleccione el territorio que desea desbloquear.");
+            document.getElementById('modalDesbloqueo').style.display = 'flex';
+            document.getElementById('inputCodigoAdmin').value = '';
+        }
+        function cerrarModalDesbloqueo() { document.getElementById('modalDesbloqueo').style.display = 'none'; }
+
+        function cancelarEdicion() {
+            modoEdicion = false;
+            territorioAutenticado = null;
+            document.getElementById('selTerritorio').disabled = false;
+            document.getElementById('selMes').disabled = false;
+            document.querySelectorAll('.calc-input, .input-obs').forEach(el => el.disabled = true);
+            document.getElementById('btnGuardar').disabled = true;
+
+            document.getElementById('btnHabilitar').style.display = 'inline-block';
+            document.getElementById('btnCancelarEdicion').style.display = 'none';
+        }
+
+        async function validarCodigo() {
+            const terr = document.getElementById('selTerritorio').value;
+            const cod = document.getElementById('inputCodigo').value;
+            if(cod.length !== 8) return alert("El código debe tener 8 dígitos.");
+
+            try {
+                const res = await fetch('/api/indicadores_cobertura/auth', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ territorio: terr, codigo: cod })
+                });
+                const data = await res.json();
+
+                if(res.ok && data.status === 'success') {
+                    modoEdicion = true;
+                    territorioAutenticado = terr;
+
+                    // Bloqueo de Contexto
+                    document.getElementById('selTerritorio').disabled = true;
+                    document.getElementById('selMes').disabled = true;
+
+                    // Habilitar campos
+                    document.querySelectorAll('.calc-input, .input-obs').forEach(el => el.disabled = false);
+                    document.getElementById('btnGuardar').disabled = false;
+
+                    // Botonera
+                    document.getElementById('btnHabilitar').style.display = 'none';
+                    document.getElementById('btnCancelarEdicion').style.display = 'inline-block';
+
+                    cerrarModalAuth();
+                    alert("✅ Edición Habilitada para " + terr + "\n\nSe ha bloqueado la selección de Territorio/Mes para evitar sobreescritura incorrecta. Utilice 'Cancelar Edición' si desea cambiar.");
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) { alert("Falla de servidor en validación técnica."); }
+        }
+
+        async function ejecutarDesbloqueo() {
+            const terr = document.getElementById('selTerritorio').value;
+            const password = document.getElementById('inputCodigoAdmin').value;
+            const username = sessionStorage.getItem('username') || localStorage.getItem('username');
+
+            if(!password) return alert("Ingrese su contraseña personal de administrador.");
+            if(!username) return alert("No se pudo detectar la sesión de administrador. Inicie sesión nuevamente.");
+
+            try {
+                const res = await fetch('/api/indicadores_cobertura/desbloquear', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ territorio: terr, username: username, password: password })
+                });
+                const data = await res.json();
+
+                if(res.ok && data.status === 'success') {
+                    alert(data.message);
+                    cerrarModalDesbloqueo();
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) { alert("Falla de servidor durante el desbloqueo."); }
+        }
+
+        async function cargarDatos() {
+            const terr = document.getElementById('selTerritorio').value;
+            const mes = document.getElementById('selMes').value;
+
+            if(!terr || !mes) return alert("Seleccione Territorio y Mes para consultar la información.");
+
+            renderizarTabla();
+
+            if(terr !== territorioAutenticado) {
+                cancelarEdicion();
+            }
+
+            try {
+                const res = await fetch(`/api/indicadores_cobertura/datos?territorio=${terr}&mes=${mes}`);
+                const data = await res.json();
+                if(data.status === 'success') {
+                    data.data.forEach(row => {
+                        const id = row.id_indicador;
+                        if(document.getElementById(`num_${id}`)) {
+                            document.getElementById(`num_${id}`).value = row.numerador || '';
+                            document.getElementById(`den_${id}`).value = row.denominador || '';
+                            document.getElementById(`obs_${id}`).value = row.observaciones || '';
+                            calcularPorcentaje(id);
+                        }
+                    });
+                }
+            } catch (e) { console.error("Error cargando datos", e); }
+        }
+
+        async function guardarDatos() {
+            if(!modoEdicion) return;
+            const terr = document.getElementById('selTerritorio').value;
+            const mes = document.getElementById('selMes').value;
+
+            if(!terr || !mes) return alert("Territorio y Mes son obligatorios para guardar.");
+
+            const payload = [];
+
+            baseIndicadores.forEach((_, idx) => {
+                const id = idx + 1;
+                const num = parseFloat(document.getElementById(`num_${id}`).value) || null;
+                const den = parseFloat(document.getElementById(`den_${id}`).value) || null;
+                const porc = document.getElementById(`porc_${id}`).innerText.replace('%','');
+                const obs = document.getElementById(`obs_${id}`).value.trim();
+                payload.push({ id: id, num: num, den: den, porc: porc ? parseFloat(porc) : null, obs: obs });
+            });
+
+            document.getElementById('btnGuardar').innerText = 'Guardando...';
+            try {
+                const res = await fetch('/api/indicadores_cobertura/guardar', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ territorio: terr, mes: mes, indicadores: payload })
+                });
+                const data = await res.json();
+                alert(data.message);
+
+                // Sale de modo edición al finalizar guardado exitoso
+                if(res.ok && data.status === 'success') {
+                    cancelarEdicion();
+                }
+
+            } catch (e) { alert("Error al guardar."); }
+            document.getElementById('btnGuardar').innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
+        }
+
+        function exportarPDF() {
+            const terr = document.getElementById('selTerritorio').value || 'N/A';
+            const mes = document.getElementById('selMes').value || 'N/A';
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'pt', 'a4');
+
+            doc.setFontSize(14);
+            doc.text(`Reporte de Indicadores de Cobertura APS`, 40, 30);
+            doc.setFontSize(10);
+            doc.text(`Territorio: ${terr} | Mes: ${mes}`, 40, 45);
+
+            const headers = [['N°', 'INDICADOR', 'DESCRIPCIÓN DEL INDICADOR', 'FÓRMULA DE CÁLCULO', 'N', 'D', '%', 'OBSERVACIONES']];
+            const data = [];
+
+            baseIndicadores.forEach((ind, idx) => {
+                const id = idx + 1;
+
+                if (seccionesIndicadores[id]) {
+                    data.push([{
+                        content: seccionesIndicadores[id],
+                        colSpan: 8,
+                        styles: { halign: 'left', fillColor: [0, 176, 155], textColor: [255, 255, 255], fontStyle: 'bold' }
+                    }]);
+                }
+
+                const n = document.getElementById(`num_${id}`) ? document.getElementById(`num_${id}`).value : '';
+                const d = document.getElementById(`den_${id}`) ? document.getElementById(`den_${id}`).value : '';
+                const porc = document.getElementById(`porc_${id}`) ? document.getElementById(`porc_${id}`).innerText : '0%';
+                const obs = document.getElementById(`obs_${id}`) ? document.getElementById(`obs_${id}`).value : '';
+
+                data.push([ id, ind[0], ind[1], ind[2], n, d, porc, obs ]);
+            });
+
+            doc.autoTable({
+                startY: 55,
+                head: headers,
+                body: data,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 75, 135], fontSize: 8, halign: 'center' },
+                bodyStyles: { fontSize: 7, valign: 'middle' },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 20 },
+                    1: { cellWidth: 120, fontStyle: 'bold' },
+                    2: { cellWidth: 160 },
+                    3: { cellWidth: 130 },
+                    4: { halign: 'center', cellWidth: 35 },
+                    5: { halign: 'center', cellWidth: 35 },
+                    6: { halign: 'center', cellWidth: 35, fontStyle: 'bold' },
+                    7: { cellWidth: 120 }
+                },
+                styles: { overflow: 'linebreak' }
+            });
+
+            doc.save(`Indicadores_Cobertura_${terr}_${mes}.pdf`);
+        }
+    </script>
+</body>
+</html>
