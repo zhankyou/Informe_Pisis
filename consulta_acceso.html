@@ -3,36 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Accesos - ESE Municipal</title>
+    <title>Consulta de Autorizaciones - INFORME APS</title>
     <link rel="stylesheet" href="/static/css/layout.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        html, body { overflow-y: auto !important; height: 100% !important; }
-        .main-content { overflow-y: auto !important; height: 100vh !important; padding-bottom: 100px !important; box-sizing: border-box; }
-
-        .form-container { background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 1200px; margin: 20px auto 30px auto; color: #333; border-top: 6px solid #004b87; }
-        .form-header { margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
-        .form-header h2 { color: #004b87; font-size: 1.8rem; margin: 0; }
-
-        .table-container { overflow-x: auto; margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-        .admin-table th { background-color: #004b87; color: white; padding: 12px 15px; font-weight: 600; white-space: nowrap; }
-        .admin-table td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #4b5563; vertical-align: middle; }
-        .admin-table tr:hover { background-color: #f8fafc; }
-
-        .controls-wrapper { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .search-box { flex: 1; min-width: 250px; padding: 12px 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; outline: none; transition: border-color 0.3s; }
-        .search-box:focus { border-color: #004b87; box-shadow: 0 0 0 3px rgba(0,75,135,0.1); }
-        .btn-csv { padding: 12px 20px; border-radius: 6px; border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-        .btn-csv-all { background-color: #059669; }
-        .btn-csv-all:hover { background-color: #047857; }
-        .btn-csv-filtered { background-color: #3b82f6; }
-        .btn-csv-filtered:hover { background-color: #2563eb; }
-
-        .btn-delete { background-color: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
-        .btn-delete:hover { background-color: #dc2626; transform: scale(1.05); }
-
-        #loading-msg { text-align: center; font-size: 1.2rem; color: #666; padding: 40px; }
+        html, body { margin: 0; padding: 0; height: auto !important; min-height: 100vh; overflow-y: auto !important; background-color: #f3f4f6; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .main-content { min-height: 100vh; padding-bottom: 50px; }
+        .card { background: #ffffff; border-radius: 12px; padding: 24px; margin: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border-top: 5px solid #004b87; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        .form-group input { padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; }
+        .form-group input:focus { border-color: #00b09b; outline: none; box-shadow: 0 0 0 3px rgba(0, 176, 155, 0.15); }
+        .btn-action { background: #004b87; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-action:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-danger { background: #dc3545; }
+        .btn-info { background: #0ea5e9; }
+        .toolbar-table { display: flex; justify-content: space-between; align-items: center; margin: 0 20px 15px 20px; padding: 15px 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .table-container { margin: 0 20px; overflow-x: auto; max-height: 600px; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1000px; }
+        th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; text-transform: uppercase; }
+        td { padding: 12px 10px; border-bottom: 1px solid #f3f4f6; text-align: center; color: #4b5563; }
+        tr:hover { background-color: #f0fdfa; }
+        .alerta-dinamica { display: none; align-items: center; justify-content: space-between; padding: 16px 20px; margin-bottom: 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
+        .alerta-error { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-left: 6px solid #dc2626; }
+        .alerta-exito { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-left: 6px solid #059669; }
     </style>
 </head>
 <body>
@@ -40,187 +33,189 @@
     <div class="main-content">
         <app-topbar titulo="Consulta de Autorizaciones"></app-topbar>
 
-        <div id="adminPanel" class="form-container" style="display: none;">
-            <div class="form-header">
-                <h2><i class="fas fa-database"></i> Base de Datos: Solicitudes de Acceso</h2>
+        <div class="card">
+            <h3 style="margin-top: 0; color: #004b87; font-size: 1.2rem; margin-bottom: 20px;"><i class="fas fa-search"></i> Filtros de Búsqueda</h3>
+            <div id="alertaGlobal" class="alerta-dinamica">
+                <span id="alertaMensaje"></span>
+                <button onclick="cerrarAlerta()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:inherit;"><i class="fas fa-times"></i></button>
             </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <div class="form-group"><input type="text" id="filtroDoc" placeholder="Buscar por Documento..." oninput="filtrarTabla()"></div>
+                <div class="form-group"><input type="text" id="filtroNombre" placeholder="Buscar por Nombre Completo..." oninput="filtrarTabla()"></div>
+            </div>
+        </div>
 
-            <div class="controls-wrapper">
-                <input type="text" id="searchInput" class="search-box" onkeyup="filtrarTabla()" placeholder="Buscar por documento, nombre o correo...">
-                <button onclick="exportarCSV(false)" class="btn-csv btn-csv-filtered"><i class="fas fa-filter"></i> Descargar Filtrado</button>
-                <button onclick="exportarCSV(true)" class="btn-csv btn-csv-all"><i class="fas fa-download"></i> Descargar Todo</button>
-            </div>
+        <div class="toolbar-table">
+            <div style="font-size: 0.9rem; color: #6b7280;"><strong id="lblTotalRegistros" style="color:#004b87;">0</strong> registros encontrados</div>
+        </div>
 
-            <div class="table-container">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Documento</th>
-                            <th>Nombre Completo</th>
-                            <th>Perfil / Sistema</th>
-                            <th>Celular</th>
-                            <th>Correo Electrónico</th>
-                            <th>Territorio</th>
-                            <th style="text-align: center;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaAccesosBody">
-                        <tr><td colspan="7" id="loading-msg"><i class="fas fa-spinner fa-spin"></i> Cargando registros de forma segura...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-container">
+            <table id="tablaAccesos">
+                <thead>
+                    <tr>
+                        <th>Acciones</th>
+                        <th>Fecha Solicitud</th>
+                        <th>N° Documento</th>
+                        <th>Nombre Completo</th>
+                        <th>Perfil Profesional</th>
+                        <th>Celular</th>
+                        <th>Correo</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyAccesos"></tbody>
+            </table>
         </div>
     </div>
 
     <script src="/static/js/layout.js"></script>
-    <script src="/static/js/rbac.js"></script>
     <script>
-        let datosGlobalesAccesos = [];
+        let datosGlobales = [];
 
-        function validarYEjecutarSeguridad() {
-            const rolRaw = sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario') || sessionStorage.getItem('rol') || localStorage.getItem('rol') || '';
-            const rolActual = rolRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarDatos();
+        });
 
-            const isAdmin = rolActual.includes('admin') || rolActual.includes('coordinador') || localStorage.getItem('isAdmin') === 'true' || sessionStorage.getItem('isAdmin') === 'true';
-
-            if (!isAdmin) {
-                alert("Acceso denegado: Se requieren privilegios administrativos.");
-                window.location.href = "/";
-                return;
+        function getHeaders() {
+            const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+            if (!token) {
+                mostrarAlerta("Sesión expirada o token faltante. Redirigiendo al Login...", "error");
+                setTimeout(() => window.location.href = '/login', 2000);
+                throw new Error("No token");
             }
-            document.getElementById('adminPanel').style.display = 'block';
-            cargarDatosTabla();
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
         }
 
-        async function cargarDatosTabla() {
+        function mostrarAlerta(mensaje, tipo) {
+            const alerta = document.getElementById('alertaGlobal');
+            const msjSpan = document.getElementById('alertaMensaje');
+            alerta.className = `alerta-dinamica alerta-${tipo}`;
+            msjSpan.innerHTML = `<i class="fas ${tipo === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${mensaje}`;
+            alerta.style.display = 'flex';
+            if (tipo === 'exito') setTimeout(cerrarAlerta, 5000);
+        }
+
+        function cerrarAlerta() {
+            document.getElementById('alertaGlobal').style.display = 'none';
+        }
+
+        async function cargarDatos() {
             try {
-                const res = await fetch('/api/listar_accesos');
-                const json = await res.json();
-                if (json.status === 'success') {
-                    datosGlobalesAccesos = json.data;
-                    renderizarTablaAccesos(datosGlobalesAccesos);
-                } else {
-                    throw new Error(json.message);
-                }
+                const res = await fetch('/api/listar_accesos', { method: 'GET', headers: getHeaders() });
+                const data = await res.json();
+                if (!res.ok || data.status === 'error') { mostrarAlerta(data.message || "Acceso denegado.", "error"); return; }
+                datosGlobales = data.data || [];
+                filtrarTabla();
             } catch (e) {
-                document.getElementById('tablaAccesosBody').innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Error cargando registros: ${e.message}</td></tr>`;
+                if(e.message !== "No token") mostrarAlerta("Falla al cargar registros desde el servidor.", "error");
             }
         }
 
-        function construirNombreReal(row) {
-            if (row.nombre_completo && String(row.nombre_completo).trim() !== '') {
-                return String(row.nombre_completo).trim();
-            }
-            const partes = [row.primer_nombre, row.segundo_nombre, row.primer_apellido, row.segundo_apellido];
-            return partes.filter(p => p && String(p).trim() !== '').join(' ');
-        }
-
-        function renderizarTablaAccesos(data) {
-            const tbody = document.getElementById('tablaAccesosBody');
+        function renderizarTabla(datos) {
+            const tbody = document.getElementById('tbodyAccesos');
             tbody.innerHTML = '';
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">No hay solicitudes que coincidan con la búsqueda.</td></tr>';
+
+            const rolActual = String(sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario')).toLowerCase();
+            const esAdmin = rolActual.includes('admin') || rolActual.includes('coordinador');
+
+            if(datos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; color:#6b7280;">No se encontraron registros.</td></tr>`;
                 return;
             }
-            data.forEach(row => {
-                const nomF = construirNombreReal(row) || 'N/A';
-                const celular = row.celular || 'N/A';
-                const perfil = row.perfil_profesional || row.sistema || 'N/A';
+
+            datos.forEach(d => {
+                const nombreComp = d.nombre_completo || `${d.primer_nombre} ${d.primer_apellido}`;
+                const btnDelete = esAdmin ? `<button title="Eliminar" onclick="eliminarRegistro(${d.id})" class="btn-action btn-danger"><i class="fas fa-trash-alt"></i></button>` : '';
+                const btnEmail = esAdmin ? `<button title="Enviar Aval al Correo" onclick="enviarCorreoAval(${d.id})" class="btn-action" style="background:#10b981;"><i class="fas fa-envelope"></i></button>` : '';
 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-weight: bold;">${row.numero_documento || 'N/A'}</td>
-                        <td>${nomF}</td>
-                        <td style="color: #004b87; font-weight: bold;">${perfil}</td>
-                        <td>${celular}</td>
-                        <td>${row.correo || 'N/A'}</td>
-                        <td>${row.territorio || 'N/A'}</td>
-                        <td style="text-align: center;">
-                            <button onclick="eliminarRegistro(${row.id})" class="btn-delete" title="Eliminar Registro">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
+                        <td style="white-space: nowrap;">
+                            <button title="Descargar PDF" onclick='descargarPDF(${JSON.stringify(d).replace(/'/g, "&apos;")})' class="btn-action btn-info"><i class="fas fa-file-pdf"></i></button>
+                            ${btnEmail}
+                            ${btnDelete}
                         </td>
+                        <td>${d.fecha_solicitud || 'N/A'}</td>
+                        <td><strong>${d.numero_documento}</strong></td>
+                        <td style="text-align: left;">${nombreComp}</td>
+                        <td>${d.perfil_profesional || 'N/A'}</td>
+                        <td>${d.celular || 'N/A'}</td>
+                        <td>${d.correo || 'N/A'}</td>
                     </tr>
                 `;
             });
         }
 
         function filtrarTabla() {
-            const filtro = document.getElementById('searchInput').value.toLowerCase();
-            const dataFiltrada = datosGlobalesAccesos.filter(row => {
-                const doc = (row.numero_documento || '').toLowerCase();
-                const nom = construirNombreReal(row).toLowerCase();
-                const correo = (row.correo || '').toLowerCase();
-                return doc.includes(filtro) || nom.includes(filtro) || correo.includes(filtro);
+            const fDoc = document.getElementById('filtroDoc').value.trim().toLowerCase();
+            const fNom = document.getElementById('filtroNombre').value.trim().toLowerCase();
+
+            const filtrados = datosGlobales.filter(d => {
+                const nombreComp = String(d.nombre_completo || `${d.primer_nombre} ${d.primer_apellido}`).toLowerCase();
+                const doc = String(d.numero_documento || '').toLowerCase();
+                return doc.includes(fDoc) && nombreComp.includes(fNom);
             });
-            renderizarTablaAccesos(dataFiltrada);
+
+            document.getElementById('lblTotalRegistros').innerText = filtrados.length;
+            renderizarTabla(filtrados);
+        }
+
+        async function enviarCorreoAval(id) {
+            cerrarAlerta();
+            if(!confirm("¿Desea enviar el correo de Aval a este usuario?")) return;
+
+            try {
+                mostrarAlerta("Enviando correo, por favor espere...", "info"); // Estado de carga
+                const res = await fetch(`/api/enviar_aval/${id}`, {
+                    method: 'POST', headers: getHeaders()
+                });
+                const data = await res.json();
+
+                if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
+                mostrarAlerta(data.message, 'exito');
+            } catch (e) {
+                if(e.message !== "No token") mostrarAlerta("Falla al solicitar el envío de correo.", "error");
+            }
         }
 
         async function eliminarRegistro(id) {
-            if (!confirm("⚠️ ¿Está seguro de que desea eliminar permanentemente este registro? Esta acción no se puede deshacer.")) return;
+            cerrarAlerta();
+            if(!confirm("¿Está seguro de eliminar esta solicitud de acceso de forma permanente?")) return;
 
             try {
-                const res = await fetch(`/api/eliminar_acceso/${id}`, { method: 'DELETE' });
-                const json = await res.json();
-
-                if (res.ok && json.status === 'success') {
-                    alert(json.message);
-                    cargarDatosTabla();
-                } else {
-                    alert(json.message || "Error al eliminar el registro.");
-                }
+                const res = await fetch(`/api/eliminar_acceso/${id}`, { method: 'DELETE', headers: getHeaders() });
+                const data = await res.json();
+                if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
+                mostrarAlerta(data.message, 'exito');
+                cargarDatos();
             } catch (e) {
-                alert("Falla de red al intentar eliminar el registro.");
+                if(e.message !== "No token") mostrarAlerta("Falla al solicitar eliminación al servidor.", "error");
             }
         }
 
-        function exportarCSV(descargarTodo) {
-            let dataExport = datosGlobalesAccesos;
-            if (!descargarTodo) {
-                const filtro = document.getElementById('searchInput').value.toLowerCase();
-                dataExport = datosGlobalesAccesos.filter(row => {
-                    const doc = (row.numero_documento || '').toLowerCase();
-                    const nom = construirNombreReal(row).toLowerCase();
-                    const correo = (row.correo || '').toLowerCase();
-                    return doc.includes(filtro) || nom.includes(filtro) || correo.includes(filtro);
-                });
+        async function descargarPDF(datosFila) {
+            cerrarAlerta();
+            try {
+                const res = await fetch('/api/descargar_pdf_acceso', { method: 'POST', headers: getHeaders(), body: JSON.stringify(datosFila) });
+                if (!res.ok) {
+                    const data = await res.json();
+                    mostrarAlerta(data.message || "Error al generar el PDF.", "error"); return;
+                }
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Solicitud_Acceso_${datosFila.numero_documento}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                if(e.message !== "No token") mostrarAlerta("Falla al intentar descargar el PDF.", "error");
             }
-
-            if (dataExport.length === 0) return alert("No hay datos para descargar.");
-
-            const cabeceras = ["Documento", "Nombre Completo", "Perfil Profesional / Sistema", "Celular", "Correo", "Programa", "Territorio", "Microterritorio"];
-            let csvContent = "\uFEFF" + cabeceras.join(";") + "\n";
-
-            dataExport.forEach(row => {
-                const nomF = construirNombreReal(row);
-                const celular = row.celular || '';
-                const perfil = row.perfil_profesional || row.sistema || '';
-
-                const fila = [
-                    row.numero_documento || '',
-                    nomF,
-                    perfil,
-                    celular,
-                    row.correo || '',
-                    row.programa || '',
-                    row.territorio || '',
-                    row.microterritorio || ''
-                ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(";");
-
-                csvContent += fila + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", descargarTodo ? "Reporte_Accesos_Total.csv" : "Reporte_Accesos_Filtrado.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
-
-        document.addEventListener('DOMContentLoaded', validarYEjecutarSeguridad);
     </script>
 </body>
 </html>
