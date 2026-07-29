@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Pagos - INFORME APS</title>
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* BASE & LAYOUT */
+        html, body { margin: 0; padding: 0; height: auto !important; min-height: 100vh; overflow-y: auto !important; background-color: #f3f4f6; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .main-content { min-height: 100vh; padding-bottom: 50px; }
+
+        /* CARDS MODERNIZADAS */
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin: 20px; }
+        .card { background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border-top: 5px solid #004b87; position: relative; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); }
+        .card-warning { border-top-color: #f59e0b; }
+
+        /* FORMULARIOS PROFESIONALES */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px; letter-spacing: 0.3px; }
+        .form-group input, .form-group select {
+            padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;
+            color: #1f2937; background-color: #f9fafb; transition: all 0.3s ease; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: #00b09b; background-color: #ffffff; outline: none; box-shadow: 0 0 0 3px rgba(0, 176, 155, 0.15);
+        }
+
+        /* BOTONES DINÁMICOS */
+        .btn-action {
+            background: #004b87; color: white; border: none; padding: 10px 18px; border-radius: 8px;
+            cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-action:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.15); filter: brightness(1.1); }
+        .btn-action:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .btn-danger { background: #dc3545; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-success { background: #10b981; }
+        .btn-info { background: #0ea5e9; }
+
+        /* TABLA Y PAGINACIÓN */
+        .toolbar-table {
+            display: flex; justify-content: space-between; align-items: center; margin: 0 20px 15px 20px;
+            padding: 15px 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); flex-wrap: wrap; gap: 15px;
+        }
+        .table-container { margin: 0 20px 20px 20px; overflow-x: auto; overflow-y: auto; max-height: 550px; background: #fff; border-radius: 12px 12px 0 0; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border-bottom: 1px solid #e5e7eb; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1200px; }
+        th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; }
+        td { padding: 12px 10px; border-bottom: 1px solid #f3f4f6; text-align: center; color: #4b5563; }
+        tr:hover { background-color: #f0fdfa; }
+
+        .pagination-container { display: flex; justify-content: space-between; align-items: center; background: #fff; margin: 0 20px 20px 20px; padding: 15px 20px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); flex-wrap: wrap; gap: 15px; }
+        .pagination-controls { display: flex; gap: 6px; }
+        .page-btn { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .page-btn:hover:not(:disabled) { background: #e5e7eb; }
+        .page-btn.active { background: #004b87; color: white; border-color: #004b87; }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* PANELES DE RESUMEN */
+        .resumen-panel { display: none; margin: 20px; background: #0f172a; color: white; border-radius: 12px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-left: 6px solid #10b981; }
+        .resumen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 20px; }
+        .resumen-item { background: rgba(255,255,255,0.05); padding: 18px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s; }
+        .resumen-item:hover { transform: translateY(-3px); background: rgba(255,255,255,0.08); }
+        .resumen-item span { display: block; font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600; }
+        .resumen-item strong { font-size: 1.3rem; color: #34d399; letter-spacing: 0.5px; }
+        .resumen-item.danger strong { color: #f87171; }
+
+        .resumen-ejecutivo { margin-top: 24px; padding: 18px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; border-radius: 8px; color: #cbd5e1; font-size: 0.95rem; line-height: 1.7; text-align: justify; }
+        .resumen-ejecutivo strong { color: #f8fafc; font-weight: 600; }
+
+        .admin-only { display: none; }
+
+        /* ALERTAS FLOTANTES */
+        .alerta-dinamica { display: none; align-items: center; justify-content: space-between; padding: 16px 20px; margin-bottom: 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .alerta-error { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-left: 6px solid #dc2626; }
+        .alerta-exito { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-left: 6px solid #059669; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <app-sidebar active-menu="seguimiento_pagos"></app-sidebar>
+    <div class="main-content">
+        <app-topbar titulo="Seguimiento de Pagos"></app-topbar>
+
+        <div class="grid-cards">
+            <!-- Formulario -->
+            <div class="card">
+                <h3 style="margin-top: 0; color: #004b87; font-size: 1.2rem; margin-bottom: 20px;"><i class="fas fa-file-invoice-dollar" style="color:#00b09b;"></i> Registro de Pago</h3>
+
+                <div id="alertaFormulario" class="alerta-dinamica">
+                    <span id="alertaMensaje"></span>
+                    <button onclick="cerrarAlerta()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:inherit; padding:0;"><i class="fas fa-times"></i></button>
+                </div>
+
+                <form id="formPago" onsubmit="guardarRegistro(event)">
+                    <input type="hidden" id="pago_id">
+                    <div class="form-grid">
+                        <div class="form-group"><label>Nombre Completo</label><input type="text" id="nombre_completo" required placeholder="Ej: Juan Perez"></div>
+                        <div class="form-group"><label>N° Documento</label><input type="text" id="numero_documento" required placeholder="Sin puntos ni comas"></div>
+                        <div class="form-group"><label>N° Contrato</label><input type="text" id="contrato" required placeholder="Ej: 001-2026"></div>
+                        <div class="form-group"><label>Valor Contrato ($)</label><input type="number" step="0.01" id="valor_contrato" required></div>
+                        <div class="form-group"><label>N° Pagos (Inicial)</label><input type="number" id="numero_pagos" required></div>
+                        <div class="form-group"><label>Cuenta N° (A pagar)</label><input type="number" id="cuenta" required></div>
+                        <div class="form-group"><label>Pago Mensual Esperado ($)</label><input type="number" step="0.01" id="pago_mensual" required></div>
+                        <div class="form-group"><label>Pago Real Facturado ($)</label><input type="number" step="0.01" id="pago_real" required></div>
+                        <div class="form-group"><label>Egresos Tesorería ($)</label><input type="number" step="0.01" id="egresos" required></div>
+                        <div class="form-group"><label>Meses Adición</label><input type="number" id="adicion_contrato" value="0" required></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label>Observaciones</label><input type="text" id="observaciones" placeholder="Opcional: Novedades en cuenta, motivos de descuento, etc."></div>
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 12px;">
+                        <button type="submit" class="btn-action btn-success"><i class="fas fa-save"></i> Guardar Registro</button>
+                        <button type="button" class="btn-action btn-warning" onclick="limpiarForm()"><i class="fas fa-eraser"></i> Limpiar / Nuevo</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Filtros y Carga Masiva -->
+            <div class="card card-warning" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; color: #f59e0b; font-size: 1.2rem; margin-bottom: 20px;"><i class="fas fa-search"></i> Filtros y Búsqueda</h3>
+                    <div class="form-group" style="margin-bottom: 12px;"><label>Nombre</label><input type="text" id="filtroNombre" placeholder="Filtrar por Nombre..." oninput="filtrarTabla()"></div>
+                    <div class="form-group" style="margin-bottom: 12px;"><label>Documento</label><input type="text" id="filtroDoc" placeholder="Filtrar por Documento..." oninput="filtrarTabla()"></div>
+                    <div class="form-group"><label>Contrato</label><input type="text" id="filtroContrato" placeholder="Filtrar por N° Contrato (Genera Reporte Inferior)..." oninput="filtrarTabla()"></div>
+                </div>
+
+                <div class="admin-only" style="margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+                    <h4 style="margin-top: 0; color: #dc3545; margin-bottom: 12px;"><i class="fas fa-file-csv"></i> Carga Masiva (CSV)</h4>
+                    <input type="file" id="archivoCsv" accept=".csv" style="margin-bottom: 12px; width: 100%; border: 1px dashed #dc3545; padding: 10px; border-radius: 8px;">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-action btn-danger" style="flex: 1;" onclick="subirCSV()"><i class="fas fa-upload"></i> Subir Archivo</button>
+                        <button class="btn-action btn-info" style="flex: 1;" onclick="descargarPlantillaCSV()"><i class="fas fa-download"></i> Plantilla</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toolbar Superior Tabla -->
+        <div class="toolbar-table">
+            <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                <label style="margin: 0; color: #4b5563;">Mostrar:</label>
+                <select id="pageSize" onchange="cambiarTamanioPagina()" style="width: auto; padding: 6px 12px;">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="ALL">Todo</option>
+                </select>
+                <label style="margin: 0; color: #4b5563;">registros</label>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="font-size: 0.9rem; color: #6b7280;"><strong id="lblTotalRegistros" style="color:#004b87;">0</strong> registros filtrados</div>
+                <button class="btn-action btn-success" onclick="descargarDatosFiltrados()"><i class="fas fa-file-excel"></i> Exportar Filtrados</button>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-container">
+            <table id="tablaPagos">
+                <thead>
+                    <tr>
+                        <th>Acciones</th>
+                        <th>Contrato</th>
+                        <th>Documento</th>
+                        <th>Nombre Completo</th>
+                        <th>V. Contrato</th>
+                        <th>N° Pagos</th>
+                        <th>Adición</th>
+                        <th>Cuenta</th>
+                        <th>Pago Mensual</th>
+                        <th>Pago Real</th>
+                        <th>Egresos</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyPagos"></tbody>
+            </table>
+        </div>
+
+        <!-- Paginación Inferior -->
+        <div class="pagination-container">
+            <div style="font-size: 0.9rem; color: #6b7280; font-weight: 500;" id="lblInfoPaginacion">Mostrando 0 a 0 de 0</div>
+            <div class="pagination-controls" id="controlesPaginacion"></div>
+        </div>
+
+        <!-- Panel de Reporte -->
+        <div class="resumen-panel" id="panelResumen">
+            <h3 style="margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; font-size: 1.3rem;"><i class="fas fa-chart-line" style="color:#10b981;"></i> Resumen de Ejecución del Contrato: <span id="lblResumenContrato" style="color:#34d399;"></span></h3>
+            <div class="resumen-grid">
+                <div class="resumen-item"><span>V. Contrato (Proyectado)</span><strong id="resVC">$0</strong></div>
+                <div class="resumen-item"><span>Total Ejecutado Real</span><strong id="resTC">$0</strong></div>
+                <div class="resumen-item"><span>Egresos Tesorería</span><strong id="resEG">$0</strong></div>
+                <div class="resumen-item danger"><span>No Ejecutado (Metas)</span><strong id="resNE">$0</strong></div>
+                <div class="resumen-item"><span>Falta por Cobrar</span><strong id="resFC">$0</strong></div>
+                <div class="resumen-item"><span>Cuentas Registradas</span><strong id="resPR">0</strong></div>
+                <div class="resumen-item danger"><span>Cuentas Pendientes</span><strong id="resPF">0</strong></div>
+            </div>
+            <div class="resumen-ejecutivo" id="resumenEjecutivoTexto"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/layout.js"></script>
+    <script>
+        let datosGlobales = [];
+        let datosFiltradosActual = [];
+        let paginaActual = 1;
+
+        const formatMoneda = (num) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num || 0);
+        const safeString = (val) => String(val || '').trim().toLowerCase();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const rolActual = safeString(sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario'));
+            if (rolActual.includes('admin')) {
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            }
+            cargarDatos();
+        });
+
+        // ==========================================
+        // EXPORTACIÓN A CSV (Plantilla y Filtrados)
+        // ==========================================
+        function exportarCSV(nombreArchivo, contenido) {
+            // \ufeff es el BOM para que Excel reconozca correctamente UTF-8
+            const blob = new Blob(["\ufeff" + contenido], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", nombreArchivo);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function descargarPlantillaCSV() {
+            const cabeceras = "nombre_completo;numero_documento;contrato;valor_contrato;numero_pagos;cuenta;pago_mensual;pago_real;egresos;adicion_contrato;observaciones\n";
+            const ejemplo1 = "JUAN PEREZ;1121932522;270-2026;50000000;5;1;10000000;10000000;10000000;0;PAGO NORMAL\n";
+            const ejemplo2 = "ANA GOMEZ;1122334455;271-2026;60000000;6;1;10000000;8500000;8500000;2;DESCUENTO POR META\n";
+            exportarCSV("Plantilla_Cargue_Pagos.csv", cabeceras + ejemplo1 + ejemplo2);
+        }
+
+        function descargarDatosFiltrados() {
+            if(datosFiltradosActual.length === 0) {
+                mostrarAlerta("No hay registros en la tabla para exportar.", "error");
+                return;
+            }
+
+            let csv = "ID_SISTEMA;CONTRATO;DOCUMENTO;NOMBRE_COMPLETO;VALOR_CONTRATO;N_PAGOS_INICIAL;ADICION_MESES;CUENTA_ACTUAL;PAGO_MENSUAL;PAGO_REAL;EGRESOS;OBSERVACIONES\n";
+            datosFiltradosActual.forEach(d => {
+                // Limpiar posibles saltos de línea o comillas dobles en las observaciones
+                const obs = String(d.observaciones || '').replace(/"/g, '""').replace(/\n/g, ' ');
+                csv += `"${d.id}";"${d.contrato}";"${d.numero_documento}";"${d.nombre_completo}";"${d.valor_contrato}";"${d.numero_pagos}";"${d.adicion_contrato}";"${d.cuenta}";"${d.pago_mensual}";"${d.pago_real}";"${d.egresos}";"${obs}"\n`;
+            });
+
+            exportarCSV("Reporte_Pagos_Filtrado.csv", csv);
+        }
+
+        // ==========================================
+        // MANEJO DE ALERTAS Y DATOS
+        // ==========================================
+        function mostrarAlerta(mensaje, tipo) {
+            const alerta = document.getElementById('alertaFormulario');
+            const msjSpan = document.getElementById('alertaMensaje');
+            alerta.className = `alerta-dinamica alerta-${tipo}`;
+            msjSpan.innerHTML = `<i class="fas ${tipo === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${mensaje}`;
+            alerta.style.display = 'flex';
+            if (tipo === 'exito') setTimeout(() => { cerrarAlerta(); }, 5000);
+            alerta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cerrarAlerta() {
+            document.getElementById('alertaFormulario').style.display = 'none';
+        }
+
+        async function cargarDatos() {
+            try {
+                const res = await fetch('/api/pagos');
+                const data = await res.json();
+                if(data.status === 'success') {
+                    datosGlobales = data.data || [];
+                    filtrarTabla();
+                }
+            } catch (e) { console.error("Error al cargar registros.", e); }
+        }
+
+        function filtrarTabla() {
+            const fNom = safeString(document.getElementById('filtroNombre').value);
+            const fDoc = safeString(document.getElementById('filtroDoc').value);
+            const fCon = safeString(document.getElementById('filtroContrato').value);
+
+            datosFiltradosActual = datosGlobales.filter(d => {
+                return safeString(d.nombre_completo).includes(fNom) &&
+                       safeString(d.numero_documento).includes(fDoc) &&
+                       safeString(d.contrato).includes(fCon);
+            });
+
+            document.getElementById('lblTotalRegistros').innerText = datosFiltradosActual.length;
+            paginaActual = 1;
+            renderizarPagina();
+            calcularMetricas(datosFiltradosActual);
+        }
+
+        function cambiarTamanioPagina() {
+            paginaActual = 1;
+            renderizarPagina();
+        }
+
+        function cambiarPagina(nuevaPagina) {
+            paginaActual = nuevaPagina;
+            renderizarPagina();
+        }
+
+        function renderizarPagina() {
+            const limitVal = document.getElementById('pageSize').value;
+            const totalRegistros = datosFiltradosActual.length;
+            let datosMostrar = [];
+
+            let limite = limitVal === 'ALL' ? totalRegistros : parseInt(limitVal);
+            if (limite <= 0) limite = 1;
+
+            const totalPaginas = Math.ceil(totalRegistros / limite) || 1;
+            if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
+            if (limitVal === 'ALL') {
+                datosMostrar = datosFiltradosActual;
+                document.getElementById('lblInfoPaginacion').innerText = `Mostrando ${totalRegistros > 0 ? 1 : 0} a ${totalRegistros} de ${totalRegistros} registros`;
+            } else {
+                const startIndex = (paginaActual - 1) * limite;
+                const endIndex = Math.min(startIndex + limite, totalRegistros);
+                datosMostrar = datosFiltradosActual.slice(startIndex, endIndex);
+                document.getElementById('lblInfoPaginacion').innerText = `Mostrando ${totalRegistros > 0 ? startIndex + 1 : 0} a ${endIndex} de ${totalRegistros} registros`;
+            }
+
+            renderizarTablaHTML(datosMostrar);
+            renderizarControlesPaginacion(totalPaginas);
+        }
+
+        function renderizarControlesPaginacion(totalPaginas) {
+            const container = document.getElementById('controlesPaginacion');
+            container.innerHTML = '';
+
+            if (totalPaginas <= 1 || document.getElementById('pageSize').value === 'ALL') return;
+
+            const btnPrev = document.createElement('button');
+            btnPrev.className = 'page-btn';
+            btnPrev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            btnPrev.disabled = paginaActual === 1;
+            btnPrev.onclick = () => cambiarPagina(paginaActual - 1);
+            container.appendChild(btnPrev);
+
+            for (let i = 1; i <= totalPaginas; i++) {
+                if (i === 1 || i === totalPaginas || (i >= paginaActual - 1 && i <= paginaActual + 1)) {
+                    const btn = document.createElement('button');
+                    btn.className = `page-btn ${i === paginaActual ? 'active' : ''}`;
+                    btn.innerText = i;
+                    btn.onclick = () => cambiarPagina(i);
+                    container.appendChild(btn);
+                } else if (i === paginaActual - 2 || i === paginaActual + 2) {
+                    const span = document.createElement('span');
+                    span.innerText = '...';
+                    span.style.padding = '5px';
+                    span.style.color = '#6b7280';
+                    span.style.fontWeight = 'bold';
+                    container.appendChild(span);
+                }
+            }
+
+            const btnNext = document.createElement('button');
+            btnNext.className = 'page-btn';
+            btnNext.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            btnNext.disabled = paginaActual === totalPaginas;
+            btnNext.onclick = () => cambiarPagina(paginaActual + 1);
+            container.appendChild(btnNext);
+        }
+
+        function renderizarTablaHTML(datos) {
+            const tbody = document.getElementById('tbodyPagos');
+            tbody.innerHTML = '';
+
+            const rolActual = safeString(sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario'));
+            const esAdmin = rolActual.includes('admin');
+
+            if(datos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" style="padding:40px; color:#6b7280; font-size: 1rem;"><i class="fas fa-folder-open fa-2x" style="color:#d1d5db; display:block; margin-bottom:10px;"></i> No se encontraron registros.</td></tr>`;
+                return;
+            }
+
+            datos.forEach(d => {
+                const btnDelete = esAdmin ? `<button type="button" onclick="eliminarRegistro(${d.id})" class="btn-action btn-danger" style="padding: 6px 10px; margin-left: 6px;"><i class="fas fa-trash-alt"></i></button>` : '';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="white-space: nowrap;">
+                            <button type="button" onclick='editarRegistro(${JSON.stringify(d).replace(/'/g, "&apos;")})' class="btn-action btn-warning" style="padding: 6px 10px; color:#fff;"><i class="fas fa-edit"></i></button>
+                            ${btnDelete}
+                        </td>
+                        <td><strong style="color:#1f2937;">${d.contrato}</strong></td>
+                        <td style="color:#4b5563;">${d.numero_documento}</td>
+                        <td style="text-align: left; white-space: nowrap; color:#111827; font-weight:500;">${d.nombre_completo}</td>
+                        <td style="white-space: nowrap;">${formatMoneda(d.valor_contrato)}</td>
+                        <td>${d.numero_pagos}</td>
+                        <td><span style="background:#fef3c7; color:#d97706; padding:2px 8px; border-radius:12px; font-weight:bold;">${d.adicion_contrato || 0}</span></td>
+                        <td><span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:4px; font-weight:bold; font-size:1.05rem;">${d.cuenta}</span></td>
+                        <td style="white-space: nowrap;">${formatMoneda(d.pago_mensual)}</td>
+                        <td style="color:#059669; font-weight:700; white-space: nowrap;">${formatMoneda(d.pago_real)}</td>
+                        <td style="color:#0284c7; font-weight:700; white-space: nowrap;">${formatMoneda(d.egresos)}</td>
+                        <td style="font-size: 0.75rem; text-align: left; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color:#6b7280;" title="${d.observaciones || ''}">${d.observaciones || ''}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function calcularMetricas(datosFiltrados) {
+            const panel = document.getElementById('panelResumen');
+
+            if (datosFiltrados.length === 0) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            const contratoRef = safeString(datosFiltrados[0].contrato);
+            const esMismoContrato = datosFiltrados.every(d => safeString(d.contrato) === contratoRef);
+
+            if (!esMismoContrato) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            panel.style.display = 'block';
+            const base = datosFiltrados[0];
+            document.getElementById('lblResumenContrato').innerText = base.contrato;
+
+            const valorContratoInicial = parseFloat(base.valor_contrato) || 0;
+            const numPagosInicial = parseInt(base.numero_pagos) || 0;
+            const maximaAdicion = Math.max(...datosFiltrados.map(d => parseInt(d.adicion_contrato) || 0));
+            const totalPagosPactados = numPagosInicial + maximaAdicion;
+
+            let totalCobradoReal = 0, totalEgresos = 0, totalNoEjecutado = 0, sumaPagoMensualProgramado = 0;
+
+            datosFiltrados.forEach(d => {
+                const pm = parseFloat(d.pago_mensual) || 0;
+                const pr = parseFloat(d.pago_real) || 0;
+                const eg = parseFloat(d.egresos) || 0;
+
+                totalCobradoReal += pr;
+                totalEgresos += eg;
+                totalNoEjecutado += (pm - pr);
+                sumaPagoMensualProgramado += pm;
+            });
+
+            const promedioPagoMensual = numPagosInicial > 0 ? (valorContratoInicial / numPagosInicial) : 0;
+            const valorContratoTotalizado = valorContratoInicial + (promedioPagoMensual * maximaAdicion);
+
+            const cuentasRegistradas = datosFiltrados.length;
+            const cuentasPendientes = totalPagosPactados - cuentasRegistradas;
+            const faltaPorCobrar = valorContratoTotalizado - sumaPagoMensualProgramado;
+
+            document.getElementById('resVC').innerText = formatMoneda(valorContratoTotalizado);
+            document.getElementById('resTC').innerText = formatMoneda(totalCobradoReal);
+            document.getElementById('resEG').innerText = formatMoneda(totalEgresos);
+            document.getElementById('resNE').innerText = formatMoneda(totalNoEjecutado);
+            document.getElementById('resFC').innerText = formatMoneda(faltaPorCobrar > 0 ? faltaPorCobrar : 0);
+            document.getElementById('resPR').innerText = cuentasRegistradas;
+            document.getElementById('resPF').innerText = cuentasPendientes > 0 ? cuentasPendientes : 0;
+
+            const txtAdicion = maximaAdicion > 0
+                ? `Actualmente cuenta con una adición de <strong>${maximaAdicion}</strong> mes(es) al contrato`
+                : `Actualmente no cuenta con adiciones en el contrato`;
+
+            document.getElementById('resumenEjecutivoTexto').innerHTML = `
+                <strong style="font-size: 1.1rem; color:#fff;"><i class="fas fa-file-signature"></i> Resumen Ejecutivo Contractual:</strong><br><br>
+                El contrato <strong>${base.contrato}</strong> a nombre del profesional <strong>${base.nombre_completo}</strong> tiene un valor proyectado ajustado de <strong>${formatMoneda(valorContratoTotalizado)}</strong>.
+                Se pactaron inicialmente <strong>${numPagosInicial}</strong> pagos. ${txtAdicion}, para un total definitivo de <strong>${totalPagosPactados}</strong> pagos proyectados.
+                El valor promedio esperado por cada cuenta es de <strong>${formatMoneda(promedioPagoMensual)}</strong>.<br><br>
+                Hasta la fecha, se han registrado y verificado <strong>${cuentasRegistradas}</strong> pagos de cuentas de cobro en el sistema, restando <strong>${cuentasPendientes > 0 ? cuentasPendientes : 0}</strong> pagos por tramitar.
+                El profesional ha recibido un pago real acumulado facturado de <strong>${formatMoneda(totalCobradoReal)}</strong>, con egresos confirmados por el área de tesorería por un valor de <strong>${formatMoneda(totalEgresos)}</strong>.
+                Se reporta un total no ejecutado (ya sea por descuentos de ley, retenciones o incumplimiento de metas operativas) equivalente a <strong>${formatMoneda(totalNoEjecutado)}</strong>.
+                El saldo restante proyectado por cobrar en la vigencia operativa es de <strong>${formatMoneda(faltaPorCobrar > 0 ? faltaPorCobrar : 0)}</strong>.
+            `;
+        }
+
+        async function guardarRegistro(e) {
+            e.preventDefault();
+            cerrarAlerta();
+            const id = document.getElementById('pago_id').value;
+            const payload = {
+                nombre_completo: document.getElementById('nombre_completo').value,
+                numero_documento: document.getElementById('numero_documento').value,
+                contrato: document.getElementById('contrato').value,
+                valor_contrato: document.getElementById('valor_contrato').value,
+                numero_pagos: document.getElementById('numero_pagos').value,
+                cuenta: document.getElementById('cuenta').value,
+                pago_mensual: document.getElementById('pago_mensual').value,
+                pago_real: document.getElementById('pago_real').value,
+                egresos: document.getElementById('egresos').value,
+                adicion_contrato: document.getElementById('adicion_contrato').value,
+                observaciones: document.getElementById('observaciones').value
+            };
+
+            const url = id ? `/api/pagos/${id}` : '/api/pagos';
+            try {
+                const res = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await res.json();
+                if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
+                mostrarAlerta(data.message, 'exito');
+                limpiarForm();
+                cargarDatos();
+            } catch (error) { mostrarAlerta("Falla de comunicación con el servidor.", "error"); }
+        }
+
+        function editarRegistro(d) {
+            cerrarAlerta();
+            document.getElementById('pago_id').value = d.id;
+            document.getElementById('nombre_completo').value = d.nombre_completo;
+            document.getElementById('numero_documento').value = d.numero_documento;
+            document.getElementById('contrato').value = d.contrato;
+            document.getElementById('valor_contrato').value = d.valor_contrato;
+            document.getElementById('numero_pagos').value = d.numero_pagos;
+            document.getElementById('cuenta').value = d.cuenta;
+            document.getElementById('pago_mensual').value = d.pago_mensual;
+            document.getElementById('pago_real').value = d.pago_real;
+            document.getElementById('egresos').value = d.egresos;
+            document.getElementById('adicion_contrato').value = d.adicion_contrato || 0;
+            document.getElementById('observaciones').value = d.observaciones || '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function limpiarForm() {
+            cerrarAlerta();
+            document.getElementById('formPago').reset();
+            document.getElementById('pago_id').value = '';
+            document.getElementById('adicion_contrato').value = '0';
+        }
+
+        async function eliminarRegistro(id) {
+            cerrarAlerta();
+            if(!confirm("¿Está seguro de eliminar este registro de pago de forma permanente?")) return;
+            try {
+                const res = await fetch(`/api/pagos/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
+                mostrarAlerta(data.message, 'exito');
+                cargarDatos();
+            } catch (e) { mostrarAlerta("Falla al solicitar eliminación al servidor.", "error"); }
+        }
+
+        async function subirCSV() {
+            cerrarAlerta();
+            const fileInput = document.getElementById('archivoCsv');
+            if(!fileInput.files.length) { mostrarAlerta("Por favor, seleccione un archivo CSV delimitado por punto y coma (;).", "error"); return; }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const res = await fetch('/api/pagos/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
+                mostrarAlerta(data.message, 'exito');
+                fileInput.value = '';
+                cargarDatos();
+            } catch (e) { mostrarAlerta("Falla crítica procesando el archivo CSV.", "error"); }
+        }
+    </script>
+</body>
+</html>
