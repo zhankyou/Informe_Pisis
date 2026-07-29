@@ -13,9 +13,11 @@ try:
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
+
     DRIVE_AVAILABLE = True
 except ImportError:
     DRIVE_AVAILABLE = False
+
 
 def remove_accents_and_upper(val):
     if not val: return None
@@ -23,14 +25,17 @@ def remove_accents_and_upper(val):
     s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
     return s.upper()
 
+
 def clean_objeto(val):
     if not val: return None
     s = str(val).replace('°', 'O').replace('º', 'O')
     return remove_accents_and_upper(s)[:500]
 
+
 def clean_numeric(val):
     if not val: return None
     return re.sub(r'[^\d]', '', str(val))
+
 
 def upload_to_drive(file_path, filename):
     if not DRIVE_AVAILABLE: return "ERROR"
@@ -60,45 +65,118 @@ def upload_to_drive(file_path, filename):
         print(f"[*] Fallo en API de Drive: {e}")
         return "ERROR"
 
+
 def crear_tabla_acceso():
+    """Ejecuta DDL garantizando integridad esquemática y persistencia JSONB dinámica"""
     query_create = text("""
-    CREATE TABLE IF NOT EXISTS solicitudes_acceso (
-        id SERIAL PRIMARY KEY,
-        sistema VARCHAR(50) NOT NULL,
-        programa VARCHAR(10),
-        territorio VARCHAR(5),
-        microterritorio VARCHAR(5),
-        tipo_documento VARCHAR(2),
-        numero_documento VARCHAR(20),
-        nombre_completo VARCHAR(150),
-        primer_nombre VARCHAR(60),
-        segundo_nombre VARCHAR(60),
-        primer_apellido VARCHAR(60),
-        segundo_apellido VARCHAR(60),
-        fecha_nacimiento DATE,
-        nacionalidad VARCHAR(60),
-        sexo VARCHAR(20),
-        celular VARCHAR(20),
-        correo VARCHAR(100),
-        regimen VARCHAR(20),
-        eapb VARCHAR(100),
-        perfil_profesional VARCHAR(150),
-        numero_contrato VARCHAR(20),
-        objeto_contrato TEXT,
-        fecha_contrato DATE,
-        fecha_finalizacion_contrato DATE,
-        valor_contrato NUMERIC,
-        seguridad_social_url VARCHAR(255),
-        archivo_base64 TEXT,
-        fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """)
+                        CREATE TABLE IF NOT EXISTS solicitudes_acceso
+                        (
+                            id
+                            SERIAL
+                            PRIMARY
+                            KEY,
+                            sistema
+                            VARCHAR
+                        (
+                            50
+                        ) NOT NULL,
+                            programa VARCHAR
+                        (
+                            10
+                        ),
+                            territorio VARCHAR
+                        (
+                            5
+                        ),
+                            microterritorio VARCHAR
+                        (
+                            5
+                        ),
+                            tipo_documento VARCHAR
+                        (
+                            2
+                        ),
+                            numero_documento VARCHAR
+                        (
+                            20
+                        ),
+                            nombre_completo VARCHAR
+                        (
+                            150
+                        ),
+                            primer_nombre VARCHAR
+                        (
+                            60
+                        ),
+                            segundo_nombre VARCHAR
+                        (
+                            60
+                        ),
+                            primer_apellido VARCHAR
+                        (
+                            60
+                        ),
+                            segundo_apellido VARCHAR
+                        (
+                            60
+                        ),
+                            fecha_nacimiento DATE,
+                            nacionalidad VARCHAR
+                        (
+                            60
+                        ),
+                            sexo VARCHAR
+                        (
+                            20
+                        ),
+                            celular VARCHAR
+                        (
+                            20
+                        ),
+                            correo VARCHAR
+                        (
+                            100
+                        ),
+                            regimen VARCHAR
+                        (
+                            20
+                        ),
+                            eapb VARCHAR
+                        (
+                            100
+                        ),
+                            perfil_profesional VARCHAR
+                        (
+                            150
+                        ),
+                            numero_contrato VARCHAR
+                        (
+                            20
+                        ),
+                            objeto_contrato TEXT,
+                            fecha_contrato DATE,
+                            fecha_finalizacion_contrato DATE,
+                            valor_contrato NUMERIC,
+                            seguridad_social_url VARCHAR
+                        (
+                            255
+                        ),
+                            archivo_base64 TEXT,
+                            datos_adicionales JSONB DEFAULT '{}'::jsonb,
+                            fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            );
+                        """)
 
     query_alter = text("""
     DO $$ 
     BEGIN 
         BEGIN
             ALTER TABLE solicitudes_acceso ADD COLUMN archivo_base64 TEXT;
+        EXCEPTION
+            WHEN duplicate_column THEN NULL;
+        END;
+        BEGIN
+            ALTER TABLE solicitudes_acceso ADD COLUMN datos_adicionales JSONB DEFAULT '{}'::jsonb;
         EXCEPTION
             WHEN duplicate_column THEN NULL;
         END;
@@ -111,6 +189,7 @@ def crear_tabla_acceso():
             conn.execute(query_alter)
     except Exception as e:
         print(f"[*] Error DDL (Crear/Alterar Tabla): {e}")
+
 
 def procesar_y_guardar_solicitud(form_data, file_obj=None):
     crear_tabla_acceso()
@@ -134,15 +213,27 @@ def procesar_y_guardar_solicitud(form_data, file_obj=None):
         'correo': str(form_data.get('correo', '')).lower().strip() if form_data.get('correo') else None,
         'regimen': remove_accents_and_upper(form_data.get('regimen')),
         'eapb': remove_accents_and_upper(form_data.get('eapb')),
-        'perfil_profesional': str(form_data.get('perfil_profesional')).strip() if form_data.get('perfil_profesional') else None,
+        'perfil_profesional': str(form_data.get('perfil_profesional')).strip() if form_data.get(
+            'perfil_profesional') else None,
         'numero_contrato': remove_accents_and_upper(form_data.get('numero_contrato')),
         'objeto_contrato': clean_objeto(form_data.get('objeto_contrato')),
         'fecha_contrato': form_data.get('fecha_contrato') if form_data.get('fecha_contrato') else None,
-        'fecha_finalizacion_contrato': form_data.get('fecha_finalizacion_contrato') if form_data.get('fecha_finalizacion_contrato') else None,
+        'fecha_finalizacion_contrato': form_data.get('fecha_finalizacion_contrato') if form_data.get(
+            'fecha_finalizacion_contrato') else None,
         'valor_contrato': clean_numeric(form_data.get('valor_contrato')),
         'seguridad_social_url': None,
         'archivo_base64': None
     }
+
+    # Captura dinámica de datos del formulario en estructura JSONB
+    datos_adicionales = {}
+    columnas_base = list(datos.keys()) + ['validacion_bot_oculta']
+
+    for key, value in form_data.items():
+        if key not in columnas_base:
+            datos_adicionales[key] = str(value).strip() if value else None
+
+    datos['datos_adicionales'] = json.dumps(datos_adicionales)
 
     if file_obj and file_obj.filename != '':
         filename = secure_filename(f"SS_{datos['numero_documento']}_{file_obj.filename}")
@@ -165,17 +256,22 @@ def procesar_y_guardar_solicitud(form_data, file_obj=None):
         if os.path.exists(temp_path): os.remove(temp_path)
 
     query = text("""
-    INSERT INTO solicitudes_acceso 
-    (sistema, programa, territorio, microterritorio, tipo_documento, numero_documento, nombre_completo, 
-    primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, nacionalidad, 
-    sexo, celular, correo, regimen, eapb, perfil_profesional, numero_contrato, objeto_contrato, 
-    fecha_contrato, fecha_finalizacion_contrato, valor_contrato, seguridad_social_url, archivo_base64) 
-    VALUES 
-    (:sistema, :programa, :territorio, :microterritorio, :tipo_documento, :numero_documento, :nombre_completo, 
-    :primer_nombre, :segundo_nombre, :primer_apellido, :segundo_apellido, :fecha_nacimiento, :nacionalidad, 
-    :sexo, :celular, :correo, :regimen, :eapb, :perfil_profesional, :numero_contrato, :objeto_contrato, 
-    :fecha_contrato, :fecha_finalizacion_contrato, :valor_contrato, :seguridad_social_url, :archivo_base64)
-    """)
+                 INSERT INTO solicitudes_acceso
+                 (sistema, programa, territorio, microterritorio, tipo_documento, numero_documento, nombre_completo,
+                  primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, nacionalidad,
+                  sexo, celular, correo, regimen, eapb, perfil_profesional, numero_contrato, objeto_contrato,
+                  fecha_contrato, fecha_finalizacion_contrato, valor_contrato, seguridad_social_url, archivo_base64,
+                  datos_adicionales)
+                 VALUES (:sistema, :programa, :territorio, :microterritorio, :tipo_documento, :numero_documento,
+                         :nombre_completo,
+                         :primer_nombre, :segundo_nombre, :primer_apellido, :segundo_apellido, :fecha_nacimiento,
+                         :nacionalidad,
+                         :sexo, :celular, :correo, :regimen, :eapb, :perfil_profesional, :numero_contrato,
+                         :objeto_contrato,
+                         :fecha_contrato, :fecha_finalizacion_contrato, :valor_contrato, :seguridad_social_url,
+                         :archivo_base64, :datos_adicionales)
+                 """)
+
     try:
         with engine.begin() as conn:
             conn.execute(query, datos)
