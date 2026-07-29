@@ -1,32 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
-import socket
 import smtplib
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-class SMTP_IPv4(smtplib.SMTP):
-    """
-    Fuerza la conexión por IPv4 para evadir el Error 101 (Network is unreachable) 
-    en contenedores cloud que no cuentan con enrutamiento IPv6 activo.
-    """
-    def _get_socket(self, host, port, timeout):
-        for res in socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM):
-            af, socktype, proto, canonname, sa = res
-            try:
-                s = socket.socket(af, socktype, proto)
-                s.settimeout(timeout)
-                s.connect(sa)
-                return s
-            except OSError:
-                if s:
-                    s.close()
-        raise OSError(f"Falla de red local: No se pudo conectar a {host}:{port} vía IPv4")
-
 def enviar_correo_aval(destinatario, nombre_usuario):
     """
-    Envía el correo de aval de acceso utilizando SMTP de Gmail forzado por IPv4.
+    Envía el correo de aval utilizando SMTP_SSL (Puerto 465) de Gmail.
+    Cifra la conexión desde el socket inicial, mitigando bloqueos por STARTTLS.
     """
     sender_email = os.getenv("GMAIL_SENDER")
     sender_password = os.getenv("GMAIL_APP_PASSWORD")
@@ -54,13 +36,13 @@ def enviar_correo_aval(destinatario, nombre_usuario):
         <p style="font-size: 15px;">Recuerda iniciar sesión dentro de la plataforma de <strong>Epicollect 5</strong> con el correo previamente registrado y dirigirse al apartado de <strong>"+ AÑADIR PROYECTO"</strong> y escribir los formularios correspondientes a su perfil profesional o técnico:</p>
         
         <ul style="background-color: #ffffff; border: 1px solid #e0e0e0; padding: 20px 40px; border-radius: 6px; list-style-type: square;">
-            <li style="margin-bottom: 12px;"><strong>DESISTIMIENTO VACUNACION:</strong> <a href="https://five.epicollect.net/project/desistimiento-vacunacion" style="color: #00b09b;">Enlace al proyecto</a></li>
-            <li style="margin-bottom: 12px;"><strong>APS VACUNACION REGULAR:</strong> <a href="https://five.epicollect.net/project/aps-vacunacion-regular" style="color: #00b09b;">Enlace al proyecto</a></li>
-            <li style="margin-bottom: 12px;"><strong>CARACTERIZACION SI_APS 2026:</strong> <a href="https://five.epicollect.net/project/caracterizacion-si-aps-2026" style="color: #00b09b;">Enlace al proyecto</a></li>
-            <li style="margin-bottom: 12px;"><strong>APS TRAMITES 2026:</strong> <a href="https://five.epicollect.net/project/aps-tramites-2026" style="color: #00b09b;">Enlace al proyecto</a></li>
-            <li style="margin-bottom: 12px;"><strong>APS PCC 2026:</strong> <a href="https://five.epicollect.net/project/aps-pcc-2026" style="color: #00b09b;">Enlace al proyecto</a></li>
-            <li style="margin-bottom: 12px;"><strong>Desistimiento APS:</strong> <a href="https://five.epicollect.net/project/desistimiento-aps" style="color: #00b09b;">Enlace al proyecto</a></li>
-            <li><strong>APS PCF 2026:</strong> <a href="https://five.epicollect.net/project/aps-pcf-2026" style="color: #00b09b;">Enlace al proyecto</a></li>
+            <li style="margin-bottom: 12px;"><strong>DESISTIMIENTO VACUNACION:</strong> <a href="https://five.epicollect.net/project/desistimiento-vacunacion" style="color: #00b09b;">https://five.epicollect.net/project/desistimiento-vacunacion</a></li>
+            <li style="margin-bottom: 12px;"><strong>APS VACUNACION REGULAR:</strong> <a href="https://five.epicollect.net/project/aps-vacunacion-regular" style="color: #00b09b;">https://five.epicollect.net/project/aps-vacunacion-regular</a></li>
+            <li style="margin-bottom: 12px;"><strong>CARACTERIZACION SI_APS 2026:</strong> <a href="https://five.epicollect.net/project/caracterizacion-si-aps-2026" style="color: #00b09b;">https://five.epicollect.net/project/caracterizacion-si-aps-2026</a></li>
+            <li style="margin-bottom: 12px;"><strong>APS TRAMITES 2026:</strong> <a href="https://five.epicollect.net/project/aps-tramites-2026" style="color: #00b09b;">https://five.epicollect.net/project/aps-tramites-2026</a></li>
+            <li style="margin-bottom: 12px;"><strong>APS PCC 2026:</strong> <a href="https://five.epicollect.net/project/aps-pcc-2026" style="color: #00b09b;">https://five.epicollect.net/project/aps-pcc-2026</a></li>
+            <li style="margin-bottom: 12px;"><strong>Desistimiento APS:</strong> <a href="https://five.epicollect.net/project/desistimiento-aps" style="color: #00b09b;">https://five.epicollect.net/project/desistimiento-aps</a></li>
+            <li><strong>APS PCF 2026:</strong> <a href="https://five.epicollect.net/project/aps-pcf-2026" style="color: #00b09b;">https://five.epicollect.net/project/aps-pcf-2026</a></li>
         </ul>
 
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
@@ -79,11 +61,8 @@ def enviar_correo_aval(destinatario, nombre_usuario):
     msg.attach(MIMEText(html_content, 'html'))
 
     try:
-        # Implementación de la clase personalizada IPv4 con timeout seguro
-        server = SMTP_IPv4("smtp.gmail.com", 587, timeout=15)
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
+        # Implementación SMTP_SSL directa por el puerto 465
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15)
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, destinatario, msg.as_string())
         server.quit()
@@ -92,9 +71,9 @@ def enviar_correo_aval(destinatario, nombre_usuario):
     except smtplib.SMTPAuthenticationError:
         logging.error("Fallo de Autenticación SMTP. Verifique contraseña de aplicación de Gmail.")
         return False
-    except socket.timeout:
-        logging.error("Timeout SMTP. El firewall de su proveedor cloud podría estar bloqueando el puerto 587 saliente.")
+    except TimeoutError:
+        logging.error("Timeout SMTP. El firewall de salida bloqueó el paquete.")
         return False
     except Exception as e:
-        logging.error(f"Error crítico al enviar correo SMTP a {destinatario}: {e}")
+        logging.error(f"Error crítico al enviar correo SMTP a {destinatario}: {e}. NOTA: Si está en Render Free Tier, los puertos 25, 465 y 587 están bloqueados por plataforma.")
         return False
