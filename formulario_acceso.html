@@ -51,6 +51,20 @@
                 <h2><i class="fas fa-shield-alt"></i> Política de Privacidad</h2>
                 <p>Este formulario tiene como objetivo recopilar tus datos personales para gestionar el acceso autorizado a formularios internos (EPICOLLECT) y bases de datos privadas (SISPRO, SI-APS) de la ESE Municipal de Villavicencio para el Programa APS.</p>
                 <p>Los datos proporcionados serán tratados estrictamente de acuerdo con la <strong>Ley 1581 de 2012 y el Decreto 1377 de 2013</strong> de Colombia sobre protección de datos personales.</p>
+
+                <div style="background-color: #e0f2fe; border-left: 5px solid #004b87; padding: 18px; margin-top: 20px; border-radius: 6px;">
+                    <h4 style="margin-top: 0; color: #004b87; margin-bottom: 10px;"><i class="fas fa-info-circle"></i> Sobre el adjunto de "Mi Seguridad Social"</h4>
+                    <p style="margin-bottom: 0; font-size: 0.95rem; color: #1e293b;">
+                        El soporte de <strong>"Mi Seguridad Social"</strong> solicitado corresponde al registro exitoso en dicha plataforma. Encontrará el paso a paso detallado (en formato PDF y videos instructivos) para el ingreso y creación de usuario en la página web dentro del material de apoyo suministrado en el siguiente enlace:
+                        <br><br>
+                        <a href="https://drive.google.com/drive/folders/18N7IifT4nZSn-eZcp7G-fkT3-ZyeXKP8?usp=drive_link" target="_blank" style="color: #004b87; font-weight: bold; text-decoration: underline; display: inline-block; background: #bae6fd; padding: 8px 12px; border-radius: 5px;">
+                            <i class="fas fa-folder-open"></i> Acceder al Material de Apoyo (Google Drive)
+                        </a>
+                        <br><br>
+                        Una vez finalizado el registro de manera exitosa, <strong>debe tomar un pantallazo y cargar dicha imagen como evidencia</strong> obligatoria en el formulario.
+                    </p>
+                </div>
+
                 <div class="modal-buttons">
                     <button class="btn-modal btn-reject" onclick="window.location.href='/'">No Acepto</button>
                     <button class="btn-modal btn-accept" onclick="aceptarPolitica()">Aceptar Términos</button>
@@ -125,8 +139,8 @@
                             </div>
                             <div class="form-group"><label>EAPB (EPS)</label><input type="text" name="eapb" class="up" required></div>
                             <div class="form-group" style="grid-column: 1 / -1;">
-                                <label>Soporte de Seguridad Social (Archivo Seguro)</label>
-                                <input type="file" name="seguridad_social" accept=".pdf,image/*" required style="padding: 9px;">
+                                <label>Soporte de Registro en "Mi Seguridad Social" (Pantallazo o PDF)</label>
+                                <input type="file" name="seguridad_social" accept=".pdf,image/*" required style="padding: 9px; border: 2px dashed #004b87; background-color: #f8fbff;">
                             </div>
                         </div>
                     </div>
