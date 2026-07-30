@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
-import os
-import io
-import csv
-import logging
-import jwt
+import os, io, csv, logging, jwt, json, re, unicodedata
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Blueprint, request, jsonify, Response, send_from_directory
 from sqlalchemy import text
 from werkzeug.security import check_password_hash
 from flask_caching import Cache
-
 from modulos.db_config import engine
 from modulos.acceso_db import procesar_y_guardar_solicitud
 from modulos.notificaciones import notificar_nuevo_registro
@@ -20,585 +15,208 @@ from modulos.email_service import enviar_correo_aval
 
 api_bp = Blueprint('api', __name__)
 DIR_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# ==============================================================================
-# CONFIGURACIÓN DE SEGURIDAD (JWT) Y CACHÉ
-# ==============================================================================
 SECRET_KEY = os.environ.get('SECRET_KEY', 'PISIS_SECURE_KEY_2026_COMPLEX_0987654321')
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 60})
 
-def generar_token_jwt(username, rol):
-    payload = {
-        'exp': datetime.utcnow() + timedelta(hours=12),
-        'iat': datetime.utcnow(),
-        'sub': username,
-        'rol': rol
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+# --- HELPERS ---
+def generar_token_jwt(u, r): return jwt.encode({'exp': datetime.utcnow() + timedelta(hours=12), 'iat': datetime.utcnow(), 'sub': u, 'rol': r}, SECRET_KEY, algorithm='HS256')
+def normalizar_cadena(t): return ''.join((c for c in str(t).lower().strip().translate(str.maketrans('áéíóúäëïöü', 'aeiouaeiou')) if c)) if t else ""
+def limpiar_ansi(t): return re.sub(r'[^A-Za-z0-9 \-\.\,\;\:]', '', ''.join(c for c in unicodedata.normalize('NFD', str(t).replace('|','')) if unicodedata.category(c) != 'Mn')).strip().upper() if t else ""
+def p_num(v, t=float):
+    try: return t(str(v).replace(',', '.')) if v and str(v).strip() else t(0)
+    except: return t(0)
+def p_dat(v): return str(v).strip() if v and str(v).strip() else None
 
 def token_requerido(f):
     @wraps(f)
     def decorador(*args, **kwargs):
-        token = None
-        if 'Authorization' in request.headers:
-            partes = request.headers['Authorization'].split()
-            if len(partes) == 2 and partes[0] == 'Bearer':
-                token = partes[1]
-        
-        if not token:
-            return jsonify({'status': 'error', 'message': 'Acceso denegado. Token faltante.'}), 401
-        
-        try:
-            data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-            usuario_actual = data['sub']
-            rol_actual = data['rol']
-        except jwt.ExpiredSignatureError:
-            return jsonify({'status': 'error', 'message': 'Token expirado. Inicie sesión nuevamente.'}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({'status': 'error', 'message': 'Token manipulado o inválido.'}), 401
-            
-        return f(usuario_actual, rol_actual, *args, **kwargs)
+        t = request.headers.get('Authorization', '').split()[1] if 'Bearer' in request.headers.get('Authorization', '') else None
+        if not t: return jsonify({'status': 'error', 'message': 'Acceso denegado. Token faltante.'}), 401
+        try: d = jwt.decode(t, SECRET_KEY, algorithms=['HS256'])
+        except Exception as e: return jsonify({'status': 'error', 'message': 'Token manipulado o expirado.'}), 401
+        return f(d['sub'], d['rol'], *args, **kwargs)
     return decorador
 
-def normalizar_cadena(texto):
-    if not texto: return ""
-    t = str(texto).lower().strip()
-    reemplazos = (("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ä", "a"), ("ë", "e"), ("ï", "i"), ("ö", "o"), ("ü", "u"))
-    for a, b in reemplazos:
-        t = t.replace(a, b)
-    return t
-
-# ==============================================================================
-# MÓDULO AUTENTICACIÓN Y ACCESOS
-# ==============================================================================
-
+# --- AUTENTICACIÓN Y ACCESOS ---
 @api_bp.route('/api/auth/login', methods=['POST'])
 @limiter.limit("20 per minute")
 def api_login():
-    data = request.json
-    raw_username = str(data.get('username', '')).strip()
-    password = str(data.get('password', '')).strip()
-
-    if not raw_username or not password:
-        return jsonify({"status": "error", "message": "Credenciales incompletas"}), 400
-
-    username_norm = normalizar_cadena(raw_username)
-
-    query = text("""
-        SELECT * FROM usuarios 
-        WHERE LOWER(TRANSLATE(username, 'áéíóúäëïöüÁÉÍÓÚÄËÏÖÜ', 'aeiouaeiouAEIOUAEIOU')) = :username_norm
-    """)
-
+    u, p = str(request.json.get('username', '')).strip(), str(request.json.get('password', '')).strip()
+    if not u or not p: return jsonify({"status": "error", "message": "Credenciales incompletas"}), 400
     try:
         with engine.connect() as conn:
-            usuario = conn.execute(query, {"username_norm": username_norm}).mappings().fetchone()
-
-        if usuario:
-            db_pass = usuario.get('password_hash') or usuario.get('password') or usuario.get('clave')
-
-            if not db_pass:
-                return jsonify({"status": "error", "message": "Error de esquema."}), 500
-
-            is_valid = False
-            if str(db_pass).startswith('pbkdf2:') or str(db_pass).startswith('scrypt:'):
-                is_valid = check_password_hash(str(db_pass), password)
-            else:
-                is_valid = (str(db_pass) == password)
-
-            if is_valid:
-                rol = usuario.get('rol', 'publico')
-                token = generar_token_jwt(raw_username, rol)
-                return jsonify({
-                    "status": "success",
-                    "token": token,
-                    "rol": rol,
-                    "username": usuario.get('username', raw_username)
-                })
-
-        return jsonify({"status": "error", "message": "Usuario o contraseña inválidos."}), 401
-    except Exception as e:
-        logging.error(f"Error en login: {e}")
-        return jsonify({"status": "error", "message": "Falla interna del servidor."}), 500
-
+            us = conn.execute(text("SELECT * FROM usuarios WHERE LOWER(TRANSLATE(username, 'áéíóúÁÉÍÓÚ', 'aeiouAEIOU')) = :u"), {"u": normalizar_cadena(u)}).mappings().fetchone()
+        if us and (check_password_hash(us.get('password_hash') or us.get('password', ''), p) if str(us.get('password_hash', '')).startswith(('pbkdf2:', 'scrypt:')) else (str(us.get('password') or us.get('clave')) == p)):
+            return jsonify({"status": "success", "token": generar_token_jwt(u, us.get('rol', 'publico')), "rol": us.get('rol', 'publico'), "username": us.get('username', u)})
+        return jsonify({"status": "error", "message": "Credenciales inválidas."}), 401
+    except Exception: return jsonify({"status": "error", "message": "Falla del servidor."}), 500
 
 @api_bp.route('/api/guardar_acceso', methods=['POST'])
 @limiter.limit("10 per hour")
 def api_guardar_acceso():
-    form_data = request.form.to_dict()
-
-    if form_data.get('validacion_bot_oculta', '') != '':
-        return jsonify({"status": "error", "message": "Petición bloqueada."}), 403
-
-    file_obj = request.files.get('seguridad_social')
-    correo = str(form_data.get('correo', '')).lower().strip()
-
-    if not correo:
-        return jsonify({"status": "error", "message": "El correo electrónico es obligatorio."}), 400
-
-    exito = procesar_y_guardar_solicitud(form_data, file_obj)
-
-    if exito:
-        nombre_completo = form_data.get('nombre_completo', '').strip()
-        if not nombre_completo:
-            nombre_completo = f"{form_data.get('primer_nombre', '')} {form_data.get('primer_apellido', '')}".strip()
-
-        detalles = (
-            f"👤 *Nuevo Registro procesado por {nombre_completo}*\n"
-            f"📄 *Documento:* {form_data.get('numero_documento', 'N/A')}\n"
-            f"🔑 *Perfil:* {form_data.get('perfil_profesional', 'N/A')}\n"
-            f"📱 *Celular:* {form_data.get('celular', 'N/A')}\n"
-            f"📧 *Correo:* {correo}"
-        )
-        notificar_nuevo_registro("Formulario de Acceso a Plataforma", detalles)
-        return jsonify({"status": "success", "message": "Solicitud registrada exitosamente."})
-    else:
-        return jsonify({"status": "error", "message": "Error al guardar la solicitud."}), 500
-
+    fd = request.form.to_dict()
+    if fd.get('validacion_bot_oculta', '') or not str(fd.get('correo', '')).strip(): return jsonify({"status": "error", "message": "Datos inválidos/bot detectado."}), 400
+    if procesar_y_guardar_solicitud(fd, request.files.get('seguridad_social')):
+        nc = fd.get('nombre_completo') or f"{fd.get('primer_nombre', '')} {fd.get('primer_apellido', '')}".strip()
+        notificar_nuevo_registro("Formulario de Acceso", f"👤 *{nc}*\n📄 *{fd.get('numero_documento', 'N/A')}*\n📧 *{fd.get('correo')}*")
+        return jsonify({"status": "success", "message": "Solicitud registrada."})
+    return jsonify({"status": "error", "message": "Error al guardar."}), 500
 
 @api_bp.route('/api/descargar_pdf_acceso', methods=['POST'])
 @token_requerido
 @limiter.limit("20 per hour")
-def api_descargar_pdf_acceso(usuario_actual, rol_actual):
-    datos = request.json
-    if not datos:
-        return jsonify({"status": "error", "message": "Datos no proporcionados."}), 400
-
-    try:
-        pdf_bytes = generar_documento_pdf(datos)
-        return Response(
-            pdf_bytes,
-            mimetype='application/pdf',
-            headers={'Content-Disposition': f"attachment;filename=Solicitud_Acceso_{datos.get('numero_documento', '000')}.pdf"}
-        )
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Error generando PDF."}), 500
-
+def api_descargar_pdf_acceso(u, r):
+    try: return Response(generar_documento_pdf(request.json), mimetype='application/pdf', headers={'Content-Disposition': f"attachment;filename=Solicitud_{request.json.get('numero_documento', '000')}.pdf"})
+    except: return jsonify({"status": "error", "message": "Error generando PDF."}), 500
 
 @api_bp.route('/api/listar_accesos', methods=['GET'])
 @token_requerido
 @limiter.limit("60 per minute")
-def api_listar_accesos(usuario_actual, rol_actual):
-    # OPTIMIZACIÓN CRÍTICA: Se excluye la columna archivo_base64 para evitar OOM (Out Of Memory) en Render
-    query = text("""
-        SELECT id, sistema, programa, territorio, microterritorio, tipo_documento, 
-               numero_documento, nombre_completo, primer_nombre, segundo_nombre, 
-               primer_apellido, segundo_apellido, fecha_nacimiento, nacionalidad, 
-               sexo, celular, correo, regimen, eapb, perfil_profesional, 
-               numero_contrato, objeto_contrato, fecha_contrato, 
-               fecha_finalizacion_contrato, valor_contrato, seguridad_social_url, 
-               datos_adicionales, fecha_solicitud 
-        FROM solicitudes_acceso 
-        ORDER BY id DESC
-    """)
+def api_listar_accesos(u, r):
     try:
         with engine.connect() as conn:
-            result = conn.execute(query).mappings().fetchall()
-            datos = []
-            for row in result:
-                dic_row = dict(row)
-                if 'fecha_nacimiento' in dic_row and dic_row['fecha_nacimiento']: dic_row['fecha_nacimiento'] = str(dic_row['fecha_nacimiento'])
-                if 'fecha_solicitud' in dic_row and dic_row['fecha_solicitud']: dic_row['fecha_solicitud'] = str(dic_row['fecha_solicitud'])
-                if 'fecha_contrato' in dic_row and dic_row['fecha_contrato']: dic_row['fecha_contrato'] = str(dic_row['fecha_contrato'])
-                if 'fecha_finalizacion_contrato' in dic_row and dic_row['fecha_finalizacion_contrato']: dic_row['fecha_finalizacion_contrato'] = str(dic_row['fecha_finalizacion_contrato'])
-                
-                if 'datos_adicionales' in dic_row and dic_row['datos_adicionales']:
-                    if isinstance(dic_row['datos_adicionales'], str):
-                        import json
-                        try:
-                            extras = json.loads(dic_row['datos_adicionales'])
-                            dic_row.update(extras)
-                        except: pass
-                    elif isinstance(dic_row['datos_adicionales'], dict):
-                        dic_row.update(dic_row['datos_adicionales'])
-                        
-                datos.append(dic_row)
-        return jsonify({"status": "success", "data": datos})
-    except Exception as e:
-        logging.error(f"Error consultando accesos: {e}")
-        return jsonify({"status": "error", "message": "Error consultando datos"}), 500
+            res = [dict(r) for r in conn.execute(text("SELECT id, sistema, programa, territorio, microterritorio, tipo_documento, numero_documento, nombre_completo, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, fecha_nacimiento, nacionalidad, sexo, celular, correo, regimen, eapb, perfil_profesional, numero_contrato, objeto_contrato, fecha_contrato, fecha_finalizacion_contrato, valor_contrato, seguridad_social_url, datos_adicionales, fecha_solicitud FROM solicitudes_acceso ORDER BY id DESC")).mappings().fetchall()]
+            for d in res:
+                for f in ['fecha_nacimiento', 'fecha_solicitud', 'fecha_contrato', 'fecha_finalizacion_contrato']: d[f] = str(d[f]) if d.get(f) else None
+                if d.get('datos_adicionales'): d.update(json.loads(d['datos_adicionales']) if isinstance(d['datos_adicionales'], str) else d['datos_adicionales'])
+        return jsonify({"status": "success", "data": res})
+    except: return jsonify({"status": "error", "message": "Falla DB."}), 500
 
-
-@api_bp.route('/api/eliminar_acceso/<int:registro_id>', methods=['DELETE'])
+@api_bp.route('/api/eliminar_acceso/<int:rid>', methods=['DELETE'])
 @token_requerido
-@limiter.limit("20 per minute")
-def api_eliminar_acceso(usuario_actual, rol_actual, registro_id):
-    if 'admin' not in rol_actual:
-        return jsonify({"status": "error", "message": "Privilegios insuficientes."}), 403
+def api_eliminar_acceso(u, r, rid):
+    if 'admin' not in r: return jsonify({"status": "error"}), 403
+    with engine.begin() as conn: conn.execute(text("DELETE FROM solicitudes_acceso WHERE id = :id"), {"id": rid})
+    return jsonify({"status": "success", "message": "Eliminado."})
 
-    query = text("DELETE FROM solicitudes_acceso WHERE id = :id")
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(query, {"id": registro_id})
-            conn.commit()
-            if result.rowcount == 0:
-                return jsonify({"status": "error", "message": "Registro no encontrado"}), 404
-        return jsonify({"status": "success", "message": "Registro eliminado exitosamente."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Error al eliminar datos"}), 500
-
-
-@api_bp.route('/api/enviar_aval/<int:registro_id>', methods=['POST'])
+@api_bp.route('/api/enviar_aval/<int:rid>', methods=['POST'])
 @token_requerido
-@limiter.limit("30 per hour")
-def api_enviar_aval(usuario_actual, rol_actual, registro_id):
-    if 'admin' not in rol_actual and 'coordinador' not in rol_actual:
-        return jsonify({"status": "error", "message": "Privilegios insuficientes."}), 403
+def api_enviar_aval(u, r, rid):
+    if 'admin' not in r and 'coordinador' not in r: return jsonify({"status": "error"}), 403
+    with engine.connect() as conn: us = conn.execute(text("SELECT correo, nombre_completo, primer_nombre FROM solicitudes_acceso WHERE id = :id"), {"id": rid}).mappings().fetchone()
+    if us and enviar_correo_aval(us['correo'], us['nombre_completo'] or us.get('primer_nombre', '')): return jsonify({"status": "success", "message": "Aval enviado."})
+    return jsonify({"status": "error", "message": "Error enviando correo."}), 500
 
-    query = text("SELECT correo, nombre_completo, primer_nombre, primer_apellido FROM solicitudes_acceso WHERE id = :id")
-    try:
-        with engine.connect() as conn:
-            usuario = conn.execute(query, {"id": registro_id}).mappings().fetchone()
-            
-        if not usuario or not usuario['correo']:
-            return jsonify({"status": "error", "message": "Registro no encontrado o no posee correo."}), 404
-
-        nombre_destino = usuario['nombre_completo'] or f"{usuario.get('primer_nombre','')} {usuario.get('primer_apellido','')}".strip()
-        
-        if enviar_correo_aval(usuario['correo'], nombre_destino):
-            return jsonify({"status": "success", "message": f"Correo de aval enviado exitosamente a {usuario['correo']}."}), 200
-        else:
-            return jsonify({"status": "error", "message": "Falla al enviar correo. Verifique configuración SMTP."}), 500
-    except Exception as e:
-        logging.error(f"Error en API enviar_aval: {e}")
-        return jsonify({"status": "error", "message": "Error interno del servidor."}), 500
-
-# ==============================================================================
-# MÓDULO INDICADORES COBERTURA
-# ==============================================================================
-
+# --- INDICADORES ---
 @api_bp.route('/api/indicadores_cobertura/auth', methods=['POST'])
-@limiter.limit("10 per minute")
-def auth_indicadores_cobertura():
-    data = request.json
-    territorio = str(data.get('territorio', '')).strip().upper()
-    codigo = str(data.get('codigo', '')).strip()
+def auth_ind_cob():
+    t, c = str(request.json.get('territorio', '')).strip().upper(), str(request.json.get('codigo', '')).strip()
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT * FROM territorios_cobertura WHERE territorio = :t"), {"t": t}).mappings().fetchone()
+        if not row or row['bloqueado']: return jsonify({"status": "error", "message": "Territorio bloqueado o inexistente."}), 403
+        if row['codigo_ingreso'] == c:
+            conn.execute(text("UPDATE territorios_cobertura SET intentos_fallidos = 0 WHERE territorio = :t"), {"t": t}); conn.commit()
+            return jsonify({"status": "success", "token_sesion": generar_token_jwt(t, 'territorio'), "territorio": t})
+        int_f = row['intentos_fallidos'] + 1
+        conn.execute(text("UPDATE territorios_cobertura SET intentos_fallidos = :i, bloqueado = :b WHERE territorio = :t"), {"i": int_f, "b": int_f >= 3, "t": t}); conn.commit()
+        return jsonify({"status": "error", "message": "Código incorrecto/bloqueado."}), 401
 
-    if not territorio or not codigo:
-        return jsonify({"status": "error", "message": "Territorio y código requeridos."}), 400
-
-    try:
-        with engine.connect() as conn:
-            query = text("SELECT * FROM territorios_cobertura WHERE territorio = :terr")
-            row = conn.execute(query, {"terr": territorio}).mappings().fetchone()
-
-            if not row:
-                return jsonify({"status": "error", "message": "Territorio no existe."}), 404
-
-            if row['bloqueado']:
-                return jsonify({"status": "error", "message": "Territorio bloqueado por múltiples intentos fallidos."}), 403
-
-            if row['codigo_ingreso'] == codigo:
-                conn.execute(text("UPDATE territorios_cobertura SET intentos_fallidos = 0 WHERE territorio = :terr"), {"terr": territorio})
-                conn.commit()
-                token = generar_token_jwt(territorio, 'territorio')
-                return jsonify({"status": "success", "token_sesion": token, "territorio": territorio})
-            else:
-                intentos = row['intentos_fallidos'] + 1
-                if intentos >= 3:
-                    conn.execute(text("UPDATE territorios_cobertura SET intentos_fallidos = :int, bloqueado = TRUE WHERE territorio = :terr"), {"int": intentos, "terr": territorio})
-                    conn.commit()
-                    notificar_nuevo_registro("SEGURIDAD PISIS", f"⚠️ *ALERTA*\nCódigo de territorio *{territorio}* bloqueado.")
-                    return jsonify({"status": "error", "message": "Código bloqueado por múltiples intentos."}), 403
-                else:
-                    conn.execute(text("UPDATE territorios_cobertura SET intentos_fallidos = :int WHERE territorio = :terr"), {"int": intentos, "terr": territorio})
-                    conn.commit()
-                    return jsonify({"status": "error", "message": f"Código incorrecto. Intentos restantes: {3 - intentos}"}), 401
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Falla de servidor."}), 500
-
-
-@api_bp.route('/api/indicadores_cobertura/desbloquear', methods=['POST'])
-@token_requerido
-@limiter.limit("10 per minute")
-def desbloquear_territorio_cobertura(usuario_actual, rol_actual):
-    if 'admin' not in rol_actual and 'coordinador' not in rol_actual:
-        return jsonify({"status": "error", "message": "Privilegios insuficientes."}), 403
-
-    data = request.json
-    territorio = str(data.get('territorio', '')).strip().upper()
-
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("UPDATE territorios_cobertura SET intentos_fallidos = 0, bloqueado = FALSE WHERE territorio = :terr"), {"terr": territorio})
-            conn.commit()
-        return jsonify({"status": "success", "message": f"Territorio {territorio} desbloqueado exitosamente."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Falla de servidor al desbloquear."}), 500
-
-
-@api_bp.route('/api/indicadores_cobertura/datos', methods=['GET'])
+@api_bp.route('/api/indicadores_<tipo>/datos', methods=['GET'])
 @cache.cached(timeout=60, query_string=True)
-def get_datos_cobertura():
-    territorio = request.args.get('territorio', '').strip().upper()
-    mes = request.args.get('mes', '').strip()
-    if not territorio or not mes: return jsonify({"status": "error", "message": "Faltan parámetros"}), 400
+def get_ind(tipo):
+    t, m = request.args.get('territorio', '').upper(), request.args.get('mes', '')
+    tb, p = ("indicadores_cobertura", {"terr": t, "mes": m}) if tipo == 'cobertura' else ("indicadores_componentes", {"mes": m})
+    wh = "WHERE territorio = :terr AND mes = :mes" if tipo == 'cobertura' else "WHERE mes = :mes"
+    with engine.connect() as conn: return jsonify({"status": "success", "data": [dict(r) for r in conn.execute(text(f"SELECT * FROM {tb} {wh}"), p).mappings().fetchall()]})
 
-    query = text("SELECT id_indicador, numerador, denominador, porcentaje, observaciones FROM indicadores_cobertura WHERE territorio = :terr AND mes = :mes")
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(query, {"terr": territorio, "mes": mes}).mappings().fetchall()
-            return jsonify({"status": "success", "data": [dict(r) for r in result]})
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Falla de servidor."}), 500
-
-
-@api_bp.route('/api/indicadores_cobertura/guardar', methods=['POST'])
+@api_bp.route('/api/indicadores_<tipo>/guardar', methods=['POST'])
 @token_requerido
-def guardar_datos_cobertura(usuario_actual, rol_actual):
-    data = request.json
-    territorio = data.get('territorio', '').strip().upper()
-    mes = data.get('mes', '').strip()
-    indicadores = data.get('indicadores', [])
+def save_ind(u, r, tipo):
+    d = request.json
+    tb, p = ("indicadores_cobertura", {"terr": d.get('territorio', '').upper(), "mes": d.get('mes')}) if tipo == 'cobertura' else ("indicadores_componentes", {"mes": d.get('mes')})
+    wh = "WHERE territorio = :terr AND mes = :mes" if tipo == 'cobertura' else "WHERE mes = :mes"
+    ins = f"INSERT INTO {tb} (territorio, mes, id_indicador, numerador, denominador, porcentaje, observaciones) VALUES (:terr, :mes, :id_ind, :num, :den, :porc, :obs)" if tipo == 'cobertura' else f"INSERT INTO {tb} (mes, id_indicador, numerador, denominador, porcentaje, observaciones) VALUES (:mes, :id_ind, :num, :den, :porc, :obs)"
+    with engine.begin() as conn:
+        conn.execute(text(f"DELETE FROM {tb} {wh}"), p)
+        for i in d.get('indicadores', []): conn.execute(text(ins), {**p, "id_ind": i['id'], "num": i.get('num'), "den": i.get('den'), "porc": i.get('porc'), "obs": i.get('obs')})
+    return jsonify({"status": "success", "message": "Guardado."})
 
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("DELETE FROM indicadores_cobertura WHERE territorio = :terr AND mes = :mes"), {"terr": territorio, "mes": mes})
-            insert_query = text("""
-                INSERT INTO indicadores_cobertura (territorio, mes, id_indicador, numerador, denominador, porcentaje, observaciones)
-                VALUES (:terr, :mes, :id_ind, :num, :den, :porc, :obs)
-            """)
-            for ind in indicadores:
-                conn.execute(insert_query, {
-                    "terr": territorio, "mes": mes, "id_ind": ind['id'],
-                    "num": ind.get('num'), "den": ind.get('den'), "porc": ind.get('porc'), "obs": ind.get('obs')
-                })
-            conn.commit()
-        return jsonify({"status": "success", "message": "Datos guardados exitosamente."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Falla al guardar en base de datos."}), 500
-
-
-# ==============================================================================
-# MÓDULO INDICADORES COMPONENTES
-# ==============================================================================
-
-@api_bp.route('/api/indicadores_componentes/datos', methods=['GET'])
-@cache.cached(timeout=60, query_string=True)
-def get_datos_componentes():
-    mes = request.args.get('mes', '').strip()
-    query = text("SELECT id_indicador, numerador, denominador, porcentaje, observaciones FROM indicadores_componentes WHERE mes = :mes")
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(query, {"mes": mes}).mappings().fetchall()
-            return jsonify({"status": "success", "data": [dict(r) for r in result]})
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Falla de servidor."}), 500
-
-
-@api_bp.route('/api/indicadores_componentes/guardar', methods=['POST'])
-@token_requerido
-def guardar_datos_componentes(usuario_actual, rol_actual):
-    if 'admin' not in rol_actual and 'coordinador' not in rol_actual:
-        return jsonify({"status": "error", "message": "Privilegios insuficientes."}), 403
-
-    data = request.json
-    mes = data.get('mes', '').strip()
-    indicadores = data.get('indicadores', [])
-
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("DELETE FROM indicadores_componentes WHERE mes = :mes"), {"mes": mes})
-            insert_query = text("""
-                INSERT INTO indicadores_componentes (mes, id_indicador, numerador, denominador, porcentaje, observaciones)
-                VALUES (:mes, :id_ind, :num, :den, :porc, :obs)
-            """)
-            for ind in indicadores:
-                conn.execute(insert_query, {
-                    "mes": mes, "id_ind": ind['id'],
-                    "num": ind.get('num'), "den": ind.get('den'), "porc": ind.get('porc'), "obs": ind.get('obs')
-                })
-            conn.commit()
-        return jsonify({"status": "success", "message": "Datos guardados exitosamente."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Falla al guardar en base de datos."}), 500
-
-
-# ==============================================================================
-# MÓDULO SEGUIMIENTO PAGOS (GESTIÓN HUMANA)
-# ==============================================================================
-
-def parse_float(val):
-    try:
-        if val is None or str(val).strip() == '': return 0.0
-        return float(str(val).replace(',', '.'))
-    except (ValueError, TypeError): return 0.0
-
-def parse_int(val):
-    try:
-        if val is None or str(val).strip() == '': return 0
-        return int(float(str(val).strip()))
-    except (ValueError, TypeError): return 0
-
+# --- PAGOS (GET, POST, PUT, DELETE, UPLOAD) ---
+def extrae_pago(d):
+    return {
+        "nc": str(d.get('nombre_completo', '')).upper()[:200], "nd": str(d.get('numero_documento', ''))[:20],
+        "con": str(d.get('contrato', '')).upper()[:50], "fic": p_dat(d.get('fecha_inicio_contrato')),
+        "ftc": p_dat(d.get('fecha_terminacion_contrato')), "ls": str(d.get('link_secop', '')).strip(),
+        "vc": p_num(d.get('valor_contrato')), "np": int(p_num(d.get('numero_pagos'))), "cta": int(p_num(d.get('cuenta'))),
+        "pm": p_num(d.get('pago_mensual')), "pr": p_num(d.get('pago_real')), "ne": str(d.get('numero_egreso', ''))[:50],
+        "adc": int(p_num(d.get('adicion_contrato'))), "obs": str(d.get('observaciones', '')).upper()[:500]
+    }
 
 @api_bp.route('/seguimiento_pagos', methods=['GET'])
-def vista_seguimiento_pagos():
-    return send_from_directory(DIR_BASE, "seguimiento_pagos.html")
-
+def vista_pagos(): return send_from_directory(DIR_BASE, "seguimiento_pagos.html")
 
 @api_bp.route('/api/pagos', methods=['GET'])
 def get_pagos():
-    try:
-        with engine.connect() as conn:
-            query = text("SELECT * FROM seguimientos_pagos ORDER BY id DESC")
-            result = conn.execute(query).mappings().fetchall()
-            return jsonify({"status": "success", "data": [dict(r) for r in result]}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Falla al consultar registros de pago."}), 500
-
+    with engine.connect() as conn: return jsonify({"status": "success", "data": [dict(r, fecha_inicio_contrato=str(r['fecha_inicio_contrato']) if r.get('fecha_inicio_contrato') else '', fecha_terminacion_contrato=str(r['fecha_terminacion_contrato']) if r.get('fecha_terminacion_contrato') else '') for r in conn.execute(text("SELECT * FROM seguimientos_pagos ORDER BY id DESC")).mappings().fetchall()]})
 
 @api_bp.route('/api/pagos', methods=['POST'])
 @token_requerido
-def crear_pago(usuario_actual, rol_actual):
-    data = request.get_json(silent=True) or {}
-    con_val = str(data.get('contrato', '')).strip().upper()[:50]
-    cta_val = parse_int(data.get('cuenta'))
+def crear_pago(u, r):
+    d = extrae_pago(request.get_json(silent=True) or {})
+    if not all([d['con'], d['cta'], d['ne'], d['fic'], d['ftc'], d['ls']]): return jsonify({"status": "error", "message": "Faltan campos obligatorios."}), 400
+    with engine.begin() as conn:
+        if conn.execute(text("SELECT 1 FROM seguimientos_pagos WHERE UPPER(contrato)=:con AND cuenta=:cta"), d).fetchone(): return jsonify({"status": "error", "message": "Cuenta duplicada."}), 400
+        conn.execute(text("INSERT INTO seguimientos_pagos (nombre_completo, numero_documento, contrato, fecha_inicio_contrato, fecha_terminacion_contrato, link_secop, valor_contrato, numero_pagos, cuenta, pago_mensual, pago_real, numero_egreso, adicion_contrato, observaciones) VALUES (:nc, :nd, :con, :fic, :ftc, :ls, :vc, :np, :cta, :pm, :pr, :ne, :adc, :obs)"), d)
+    return jsonify({"status": "success", "message": "Guardado."})
 
-    if not con_val or cta_val <= 0:
-        return jsonify({"status": "error", "message": "El Contrato y el Número de Cuenta válido son obligatorios."}), 400
-
-    try:
-        with engine.connect() as conn:
-            check_query = text("SELECT id FROM seguimientos_pagos WHERE UPPER(contrato) = :con AND cuenta = :cta")
-            existe = conn.execute(check_query, {"con": con_val, "cta": cta_val}).fetchone()
-
-            if existe:
-                return jsonify({"status": "error", "message": f"DUPLICADO: La cuenta N° {cta_val} ya se encuentra registrada para el contrato {con_val}."}), 400
-
-            query = text("""
-                INSERT INTO seguimientos_pagos 
-                (nombre_completo, numero_documento, contrato, valor_contrato, numero_pagos, cuenta, 
-                 pago_mensual, pago_real, egresos, adicion_contrato, observaciones)
-                VALUES (:nc, :nd, :con, :vc, :np, :cta, :pm, :pr, :eg, :adc, :obs)
-            """)
-            conn.execute(query, {
-                "nc": str(data.get('nombre_completo', '')).strip().upper()[:200],
-                "nd": str(data.get('numero_documento', '')).strip()[:20],
-                "con": con_val,
-                "vc": parse_float(data.get('valor_contrato')),
-                "np": parse_int(data.get('numero_pagos')),
-                "cta": cta_val,
-                "pm": parse_float(data.get('pago_mensual')),
-                "pr": parse_float(data.get('pago_real')),
-                "eg": parse_float(data.get('egresos')),
-                "adc": parse_int(data.get('adicion_contrato')),
-                "obs": str(data.get('observaciones', '')).strip().upper()[:500]
-            })
-            conn.commit()
-        return jsonify({"status": "success", "message": "Registro de pago guardado exitosamente."}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Error interno en base de datos."}), 500
-
-
-@api_bp.route('/api/pagos/<int:pago_id>', methods=['PUT'])
+@api_bp.route('/api/pagos/<int:pid>', methods=['PUT'])
 @token_requerido
-def actualizar_pago(usuario_actual, rol_actual, pago_id):
-    data = request.get_json(silent=True) or {}
-    con_val = str(data.get('contrato', '')).strip().upper()[:50]
-    cta_val = parse_int(data.get('cuenta'))
+def actualizar_pago(u, r, pid):
+    d = {**extrae_pago(request.get_json(silent=True) or {}), "id": pid}
+    if not all([d['con'], d['cta'], d['ne'], d['fic'], d['ftc'], d['ls']]): return jsonify({"status": "error", "message": "Faltan campos obligatorios."}), 400
+    with engine.begin() as conn:
+        if conn.execute(text("SELECT 1 FROM seguimientos_pagos WHERE UPPER(contrato)=:con AND cuenta=:cta AND id!=:id"), d).fetchone(): return jsonify({"status": "error", "message": "Cuenta duplicada."}), 400
+        conn.execute(text("UPDATE seguimientos_pagos SET nombre_completo=:nc, numero_documento=:nd, contrato=:con, fecha_inicio_contrato=:fic, fecha_terminacion_contrato=:ftc, link_secop=:ls, valor_contrato=:vc, numero_pagos=:np, cuenta=:cta, pago_mensual=:pm, pago_real=:pr, numero_egreso=:ne, adicion_contrato=:adc, observaciones=:obs WHERE id=:id"), d)
+    return jsonify({"status": "success", "message": "Actualizado."})
 
-    try:
-        with engine.connect() as conn:
-            check_query = text("SELECT id FROM seguimientos_pagos WHERE UPPER(contrato) = :con AND cuenta = :cta AND id != :id")
-            existe = conn.execute(check_query, {"con": con_val, "cta": cta_val, "id": pago_id}).fetchone()
-
-            if existe:
-                return jsonify({"status": "error", "message": f"DUPLICADO: La cuenta N° {cta_val} ya está registrada en otro reporte del contrato {con_val}."}), 400
-
-            query = text("""
-                UPDATE seguimientos_pagos 
-                SET nombre_completo=:nc, numero_documento=:nd, contrato=:con, valor_contrato=:vc, 
-                    numero_pagos=:np, cuenta=:cta, pago_mensual=:pm, pago_real=:pr, egresos=:eg, 
-                    adicion_contrato=:adc, observaciones=:obs
-                WHERE id = :id
-            """)
-            conn.execute(query, {
-                "id": pago_id,
-                "nc": str(data.get('nombre_completo', '')).strip().upper()[:200],
-                "nd": str(data.get('numero_documento', '')).strip()[:20],
-                "con": con_val,
-                "vc": parse_float(data.get('valor_contrato')),
-                "np": parse_int(data.get('numero_pagos')),
-                "cta": cta_val,
-                "pm": parse_float(data.get('pago_mensual')),
-                "pr": parse_float(data.get('pago_real')),
-                "eg": parse_float(data.get('egresos')),
-                "adc": parse_int(data.get('adicion_contrato')),
-                "obs": str(data.get('observaciones', '')).strip().upper()[:500]
-            })
-            conn.commit()
-        return jsonify({"status": "success", "message": "Registro actualizado exitosamente."}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Error al actualizar el registro."}), 500
-
-
-@api_bp.route('/api/pagos/<int:pago_id>', methods=['DELETE'])
+@api_bp.route('/api/pagos/<int:pid>', methods=['DELETE'])
 @token_requerido
-def eliminar_pago(usuario_actual, rol_actual, pago_id):
-    if 'admin' not in rol_actual:
-        return jsonify({"status": "error", "message": "Privilegios insuficientes."}), 403
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("DELETE FROM seguimientos_pagos WHERE id = :id"), {"id": pago_id})
-            conn.commit()
-        return jsonify({"status": "success", "message": "Registro eliminado exitosamente."}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Error al eliminar el registro."}), 500
-
+def eliminar_pago(u, r, pid):
+    if 'admin' not in r: return jsonify({"status": "error"}), 403
+    with engine.begin() as conn: conn.execute(text("DELETE FROM seguimientos_pagos WHERE id = :id"), {"id": pid})
+    return jsonify({"status": "success", "message": "Eliminado."})
 
 @api_bp.route('/api/pagos/upload', methods=['POST'])
 @token_requerido
-@limiter.limit("10 per minute")
-def upload_csv(usuario_actual, rol_actual):
-    if 'admin' not in rol_actual:
-        return jsonify({"status": "error", "message": "Privilegios insuficientes."}), 403
-
-    if 'file' not in request.files:
-        return jsonify({"status": "error", "message": "No se adjuntó ningún archivo CSV."}), 400
-
-    file = request.files['file']
-    if not file.filename.lower().endswith('.csv'):
-        return jsonify({"status": "error", "message": "El formato de archivo debe ser .csv"}), 400
-
+def upload_csv(u, r):
+    if 'admin' not in r or 'file' not in request.files: return jsonify({"status": "error", "message": "Invalido."}), 400
     try:
-        stream = io.StringIO(file.stream.read().decode("utf-8-sig"), newline=None)
-        csv_input = csv.DictReader(stream, delimiter=';')
+        csv_in = csv.DictReader(io.StringIO(request.files['file'].stream.read().decode("utf-8-sig"), newline=None), delimiter=';')
+        with engine.begin() as conn:
+            ext = {(str(r[0]).strip().upper(), int(r[1])) for r in conn.execute(text("SELECT contrato, cuenta FROM seguimientos_pagos")).fetchall()}
+            for row in csv_in:
+                d = extrae_pago(row)
+                if (d['con'], d['cta']) in ext: return jsonify({"status": "error", "message": f"Cuenta {d['cta']} duplicada en {d['con']}."}), 400
+                ext.add((d['con'], d['cta']))
+                conn.execute(text("INSERT INTO seguimientos_pagos (nombre_completo, numero_documento, contrato, fecha_inicio_contrato, fecha_terminacion_contrato, link_secop, valor_contrato, numero_pagos, cuenta, pago_mensual, pago_real, numero_egreso, adicion_contrato, observaciones) VALUES (:nc, :nd, :con, :fic, :ftc, :ls, :vc, :np, :cta, :pm, :pr, :ne, :adc, :obs)"), d)
+        return jsonify({"status": "success", "message": "Carga masiva completada."})
+    except Exception as e: return jsonify({"status": "error", "message": "Error procesando CSV."}), 500
 
-        insert_query = text("""
-            INSERT INTO seguimientos_pagos 
-            (nombre_completo, numero_documento, contrato, valor_contrato, numero_pagos, cuenta, 
-             pago_mensual, pago_real, egresos, adicion_contrato, observaciones)
-            VALUES (:nc, :nd, :con, :vc, :np, :cta, :pm, :pr, :eg, :adc, :obs)
-        """)
+# --- MOTOR ETL PISIS ---
+@api_bp.route('/api/etl/pisis/<anexo>', methods=['GET'])
+@token_requerido
+def generar_pisis(u, r, anexo):
+    if 'admin' not in r and 'coordinador' not in r: return jsonify({"status": "error"}), 403
+    fc, nit, idr, out = request.args.get('fecha_corte', datetime.now().strftime('%Y-%m-%d')), request.args.get('nit', '892000146'), request.args.get('id_recurso', 'ID0000000000'), io.StringIO()
+    try: dt_c = datetime.strptime(fc, '%Y-%m-%d'); fcf, fim = dt_c.strftime('%Y%m%d'), dt_c.replace(day=1).strftime('%Y-%m-%d')
+    except: return jsonify({"status": "error"}), 400
 
-        count = 0
-        with engine.connect() as conn:
-            existing_records = {(str(r.contrato).strip().upper(), parse_int(r.cuenta)) for r in conn.execute(text("SELECT contrato, cuenta FROM seguimientos_pagos")).fetchall()}
+    if anexo.upper() == 'SER124DREC':
+        with engine.connect() as conn: pagos = conn.execute(text("SELECT * FROM seguimientos_pagos WHERE pago_real > 0 ORDER BY id ASC")).mappings().fetchall()
+        out.write(f"1|NI|{nit}|{fim}|{fc}|{len(pagos)*2}\n"); cons = 1
+        for p in pagos:
+            fi, ft, o, cc, ne = p['fecha_inicio_contrato'] or '1900-01-01', p['fecha_terminacion_contrato'] or '1900-01-01', limpiar_ansi(p['observaciones']) or 'PRESTACION DE SERVICIOS', limpiar_ansi(p['contrato']), limpiar_ansi(p['numero_egreso']) or str(p['cuenta'])
+            out.write(f"3|{cons}|{idr}|{nit}|I|1|{cc}|{fi}|{ft}|{o[:500]}|{p['valor_contrato']:.2f}|CC|{limpiar_ansi(p['numero_documento'])}|{limpiar_ansi(p['nombre_completo'])[:100]}|||\n")
+            out.write(f"5|{cons+1}|{idr}|{nit}|I|1|{cc}|1|{ne}|{fc}|{p['pago_real']:.2f}|{p['pago_real']:.2f}|||\n")
+            cons += 2
+    elif anexo.upper() == 'APS124CCFP':
+        with engine.connect() as conn: fams = conn.execute(text("SELECT datos_adicionales FROM solicitudes_acceso")).mappings().fetchall()
+        out.write(f"1|NI|{nit}|{fim}|{fc}|{len(fams)}\n"); cons = 1
+        for f in fams:
+            d = json.loads(f['datos_adicionales']) if isinstance(f['datos_adicionales'], str) else (f['datos_adicionales'] or {})
+            out.write(f"2|{cons}|1|{limpiar_ansi(d.get('departamento_vivienda', '50'))}||{limpiar_ansi(d.get('municipio_vivienda', '50001'))}|||{limpiar_ansi(d.get('area_ubicacion_vivienda', '1'))}" + "|" * 110 + "\n")
+            cons += 1
+    else: return jsonify({"status": "error"}), 400
 
-            for idx, row in enumerate(csv_input, start=1):
-                con_val = str(row.get('contrato', '')).strip().upper()[:50]
-                cta_val = parse_int(row.get('cuenta'))
-
-                if (con_val, cta_val) in existing_records:
-                    conn.rollback()
-                    return jsonify({"status": "error", "message": f"ERROR FILA {idx}: La cuenta N° {cta_val} para el contrato {con_val} ya existe en BD o duplicado en archivo. Operación cancelada."}), 400
-
-                existing_records.add((con_val, cta_val))
-
-                conn.execute(insert_query, {
-                    "nc": str(row.get('nombre_completo', '')).strip().upper()[:200],
-                    "nd": str(row.get('numero_documento', '')).strip()[:20],
-                    "con": con_val,
-                    "vc": parse_float(row.get('valor_contrato')),
-                    "np": parse_int(row.get('numero_pagos')),
-                    "cta": cta_val,
-                    "pm": parse_float(row.get('pago_mensual')),
-                    "pr": parse_float(row.get('pago_real')),
-                    "eg": parse_float(row.get('egresos')),
-                    "adc": parse_int(row.get('adicion_contrato')),
-                    "obs": str(row.get('observaciones', '')).strip().upper()[:500]
-                })
-                count += 1
-            conn.commit()
-        return jsonify({"status": "success", "message": f"Carga masiva completada: {count} registros importados."}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Falla al procesar estructura CSV: {str(e)}"}), 500
+    out.seek(0)
+    return Response(out.read(), mimetype="text/plain", headers={"Content-Disposition": f"attachment;filename={anexo.upper()}{fcf}NI{nit.zfill(12)}{idr if anexo.upper()=='SER124DREC' else ''}.txt"})
