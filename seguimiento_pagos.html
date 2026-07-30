@@ -25,9 +25,8 @@
             padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;
             color: #1f2937; background-color: #f9fafb; transition: all 0.3s ease; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
         }
-        .form-group input:focus, .form-group select:focus {
-            border-color: #00b09b; background-color: #ffffff; outline: none; box-shadow: 0 0 0 3px rgba(0, 176, 155, 0.15);
-        }
+        .form-group input:focus, .form-group select:focus { border-color: #00b09b; background-color: #ffffff; outline: none; box-shadow: 0 0 0 3px rgba(0, 176, 155, 0.15); }
+        .form-group input[readonly] { background-color: #e5e7eb; cursor: not-allowed; border-color: #d1d5db; color: #6b7280; }
 
         /* BOTONES DINÁMICOS */
         .btn-action {
@@ -43,10 +42,7 @@
         .btn-info { background: #0ea5e9; }
 
         /* TABLA Y PAGINACIÓN */
-        .toolbar-table {
-            display: flex; justify-content: space-between; align-items: center; margin: 0 20px 15px 20px;
-            padding: 15px 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); flex-wrap: wrap; gap: 15px;
-        }
+        .toolbar-table { display: flex; justify-content: space-between; align-items: center; margin: 0 20px 15px 20px; padding: 15px 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); flex-wrap: wrap; gap: 15px; }
         .table-container { margin: 0 20px 20px 20px; overflow-x: auto; overflow-y: auto; max-height: 550px; background: #fff; border-radius: 12px 12px 0 0; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border-bottom: 1px solid #e5e7eb; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1200px; }
         th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; }
@@ -98,17 +94,21 @@
 
                 <form id="formPago" onsubmit="guardarRegistro(event)">
                     <input type="hidden" id="pago_id">
+                    <input type="hidden" id="fecha_base_terminacion">
                     <div class="form-grid">
-                        <div class="form-group"><label>Nombre Completo</label><input type="text" id="nombre_completo" required placeholder="Ej: Juan Perez"></div>
-                        <div class="form-group"><label>N° Documento</label><input type="text" id="numero_documento" required placeholder="Sin puntos ni comas"></div>
-                        <div class="form-group"><label>N° Contrato</label><input type="text" id="contrato" required placeholder="Ej: 001-2026"></div>
-                        <div class="form-group"><label>Valor Contrato ($)</label><input type="number" step="0.01" id="valor_contrato" required></div>
-                        <div class="form-group"><label>N° Pagos (Inicial)</label><input type="number" id="numero_pagos" required></div>
-                        <div class="form-group"><label>Cuenta N° (A pagar)</label><input type="number" id="cuenta" required></div>
-                        <div class="form-group"><label>Pago Mensual Esperado ($)</label><input type="number" step="0.01" id="pago_mensual" required></div>
-                        <div class="form-group"><label>Pago Real Facturado ($)</label><input type="number" step="0.01" id="pago_real" required></div>
-                        <div class="form-group"><label>Egresos Tesorería ($)</label><input type="number" step="0.01" id="egresos" required></div>
-                        <div class="form-group"><label>Meses Adición</label><input type="number" id="adicion_contrato" value="0" required></div>
+                        <div class="form-group"><label>Nombre Completo *</label><input type="text" id="nombre_completo" required placeholder="Ej: Juan Perez"></div>
+                        <div class="form-group"><label>N° Documento *</label><input type="text" id="numero_documento" required placeholder="Sin puntos ni comas"></div>
+                        <div class="form-group"><label>N° Contrato *</label><input type="text" id="contrato" required placeholder="Ej: 001-2026"></div>
+                        <div class="form-group"><label>Fecha Inicio Contrato *</label><input type="date" id="fecha_inicio_contrato" required></div>
+                        <div class="form-group"><label>Fecha Terminación Contrato *</label><input type="date" id="fecha_terminacion_contrato" required></div>
+                        <div class="form-group"><label>Link SECOP *</label><input type="url" id="link_secop" required placeholder="https://..."></div>
+                        <div class="form-group"><label>Valor Contrato ($) *</label><input type="number" step="0.01" id="valor_contrato" required></div>
+                        <div class="form-group"><label>N° Pagos (Inicial) *</label><input type="number" id="numero_pagos" required readonly title="Se calcula automáticamente en base a las fechas."></div>
+                        <div class="form-group"><label>Cuenta N° (A pagar) *</label><input type="number" id="cuenta" required></div>
+                        <div class="form-group"><label>Pago Mensual Esperado ($) *</label><input type="number" step="0.01" id="pago_mensual" required></div>
+                        <div class="form-group"><label>Pago Real Facturado ($) *</label><input type="number" step="0.01" id="pago_real" required></div>
+                        <div class="form-group"><label>N° Egreso (Asignación Tesorería) *</label><input type="text" id="numero_egreso" required></div>
+                        <div class="form-group"><label>Meses Adición *</label><input type="number" id="adicion_contrato" value="0" required></div>
                         <div class="form-group" style="grid-column: 1 / -1;"><label>Observaciones</label><input type="text" id="observaciones" placeholder="Opcional: Novedades en cuenta, motivos de descuento, etc."></div>
                     </div>
                     <div style="margin-top: 20px; display: flex; gap: 12px;">
@@ -167,15 +167,16 @@
                     <tr>
                         <th>Acciones</th>
                         <th>Contrato</th>
+                        <th>Fechas Contractuales</th>
+                        <th>SECOP</th>
                         <th>Documento</th>
                         <th>Nombre Completo</th>
                         <th>V. Contrato</th>
                         <th>N° Pagos</th>
-                        <th>Adición</th>
                         <th>Cuenta</th>
-                        <th>Pago Mensual</th>
                         <th>Pago Real</th>
-                        <th>Egresos</th>
+                        <th>N° Egreso</th>
+                        <th>Adición</th>
                         <th>Observaciones</th>
                     </tr>
                 </thead>
@@ -195,7 +196,7 @@
             <div class="resumen-grid">
                 <div class="resumen-item"><span>V. Contrato (Proyectado)</span><strong id="resVC">$0</strong></div>
                 <div class="resumen-item"><span>Total Ejecutado Real</span><strong id="resTC">$0</strong></div>
-                <div class="resumen-item"><span>Egresos Tesorería</span><strong id="resEG">$0</strong></div>
+                <div class="resumen-item"><span>Asignaciones Tesorería</span><strong id="resEG">0</strong></div>
                 <div class="resumen-item danger"><span>No Ejecutado (Metas)</span><strong id="resNE">$0</strong></div>
                 <div class="resumen-item"><span>Falta por Cobrar</span><strong id="resFC">$0</strong></div>
                 <div class="resumen-item"><span>Cuentas Registradas</span><strong id="resPR">0</strong></div>
@@ -207,12 +208,43 @@
 
     <script src="/static/js/layout.js"></script>
     <script>
-        let datosGlobales = [];
-        let datosFiltradosActual = [];
-        let paginaActual = 1;
+        let datosGlobales = [], datosFiltradosActual = [], paginaActual = 1;
 
         const formatMoneda = (num) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num || 0);
         const safeString = (val) => String(val || '').trim().toLowerCase();
+
+        // ==========================================
+        // AUTO-CÁLCULO Y LÓGICA DE FECHAS
+        // ==========================================
+        const inputInicio = document.getElementById('fecha_inicio_contrato');
+        const inputTerminacion = document.getElementById('fecha_terminacion_contrato');
+        const inputPagos = document.getElementById('numero_pagos');
+        const inputAdicion = document.getElementById('adicion_contrato');
+        const inputBaseTerminacion = document.getElementById('fecha_base_terminacion');
+
+        function recalcularFechas() {
+            const fi = inputInicio.value;
+            const ft = inputTerminacion.value;
+            const ad = parseInt(inputAdicion.value) || 0;
+
+            if (fi && ft && ad === 0) {
+                const d1 = new Date(fi + 'T12:00:00Z');
+                const d2 = new Date(ft + 'T12:00:00Z');
+                const diffMeses = Math.round(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24 * 30.416));
+                inputPagos.value = diffMeses;
+                inputBaseTerminacion.value = ft;
+            } else if (fi && ad > 0 && inputBaseTerminacion.value) {
+                const base = new Date(inputBaseTerminacion.value + 'T12:00:00Z');
+                base.setMonth(base.getMonth() + ad);
+                inputTerminacion.value = base.toISOString().split('T')[0];
+            } else if (fi && ad === 0 && inputBaseTerminacion.value) {
+                inputTerminacion.value = inputBaseTerminacion.value;
+            }
+        }
+
+        inputInicio.addEventListener('change', () => { inputBaseTerminacion.value = ''; recalcularFechas(); });
+        inputTerminacion.addEventListener('change', () => { if((parseInt(inputAdicion.value)||0) === 0) inputBaseTerminacion.value = ''; recalcularFechas(); });
+        inputAdicion.addEventListener('input', recalcularFechas);
 
         document.addEventListener('DOMContentLoaded', () => {
             const rolActual = safeString(sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario'));
@@ -222,348 +254,223 @@
             cargarDatos();
         });
 
-        // ==========================================
-        // EXPORTACIÓN A CSV (Plantilla y Filtrados)
-        // ==========================================
         function exportarCSV(nombreArchivo, contenido) {
-            // \ufeff es el BOM para que Excel reconozca correctamente UTF-8
             const blob = new Blob(["\ufeff" + contenido], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", nombreArchivo);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            link.href = URL.createObjectURL(blob);
+            link.download = nombreArchivo; link.style.visibility = 'hidden';
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         function descargarPlantillaCSV() {
-            const cabeceras = "nombre_completo;numero_documento;contrato;valor_contrato;numero_pagos;cuenta;pago_mensual;pago_real;egresos;adicion_contrato;observaciones\n";
-            const ejemplo1 = "JUAN PEREZ;1121932522;270-2026;50000000;5;1;10000000;10000000;10000000;0;PAGO NORMAL\n";
-            const ejemplo2 = "ANA GOMEZ;1122334455;271-2026;60000000;6;1;10000000;8500000;8500000;2;DESCUENTO POR META\n";
-            exportarCSV("Plantilla_Cargue_Pagos.csv", cabeceras + ejemplo1 + ejemplo2);
+            const c = "nombre_completo;numero_documento;contrato;fecha_inicio_contrato;fecha_terminacion_contrato;link_secop;valor_contrato;numero_pagos;cuenta;pago_mensual;pago_real;numero_egreso;adicion_contrato;observaciones\nJUAN PEREZ;1121932522;270-2026;2026-03-02;2026-07-01;https://secop...;50000000;4;1;12500000;12500000;EG-12345;0;PAGO NORMAL\n";
+            exportarCSV("Plantilla_Cargue_Pagos.csv", c);
         }
 
         function descargarDatosFiltrados() {
-            if(datosFiltradosActual.length === 0) {
-                mostrarAlerta("No hay registros en la tabla para exportar.", "error");
-                return;
-            }
-
-            let csv = "ID_SISTEMA;CONTRATO;DOCUMENTO;NOMBRE_COMPLETO;VALOR_CONTRATO;N_PAGOS_INICIAL;ADICION_MESES;CUENTA_ACTUAL;PAGO_MENSUAL;PAGO_REAL;EGRESOS;OBSERVACIONES\n";
+            if(datosFiltradosActual.length === 0) { mostrarAlerta("No hay registros en la tabla para exportar.", "error"); return; }
+            let csv = "ID_SISTEMA;CONTRATO;FECHA_INICIO;FECHA_FIN;LINK_SECOP;DOCUMENTO;NOMBRE_COMPLETO;VALOR_CONTRATO;N_PAGOS_INICIAL;ADICION_MESES;CUENTA_ACTUAL;PAGO_MENSUAL;PAGO_REAL;N_EGRESO;OBSERVACIONES\n";
             datosFiltradosActual.forEach(d => {
-                // Limpiar posibles saltos de línea o comillas dobles en las observaciones
                 const obs = String(d.observaciones || '').replace(/"/g, '""').replace(/\n/g, ' ');
-                csv += `"${d.id}";"${d.contrato}";"${d.numero_documento}";"${d.nombre_completo}";"${d.valor_contrato}";"${d.numero_pagos}";"${d.adicion_contrato}";"${d.cuenta}";"${d.pago_mensual}";"${d.pago_real}";"${d.egresos}";"${obs}"\n`;
+                csv += `"${d.id}";"${d.contrato}";"${d.fecha_inicio_contrato || ''}";"${d.fecha_terminacion_contrato || ''}";"${d.link_secop || ''}";"${d.numero_documento}";"${d.nombre_completo}";"${d.valor_contrato}";"${d.numero_pagos}";"${d.adicion_contrato}";"${d.cuenta}";"${d.pago_mensual}";"${d.pago_real}";"${d.numero_egreso || ''}";"${obs}"\n`;
             });
-
             exportarCSV("Reporte_Pagos_Filtrado.csv", csv);
         }
 
-        // ==========================================
-        // MANEJO DE ALERTAS Y DATOS
-        // ==========================================
         function mostrarAlerta(mensaje, tipo) {
             const alerta = document.getElementById('alertaFormulario');
-            const msjSpan = document.getElementById('alertaMensaje');
             alerta.className = `alerta-dinamica alerta-${tipo}`;
-            msjSpan.innerHTML = `<i class="fas ${tipo === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${mensaje}`;
+            document.getElementById('alertaMensaje').innerHTML = `<i class="fas ${tipo === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${mensaje}`;
             alerta.style.display = 'flex';
-            if (tipo === 'exito') setTimeout(() => { cerrarAlerta(); }, 5000);
+            if (tipo === 'exito') setTimeout(cerrarAlerta, 5000);
             alerta.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-
-        function cerrarAlerta() {
-            document.getElementById('alertaFormulario').style.display = 'none';
-        }
+        function cerrarAlerta() { document.getElementById('alertaFormulario').style.display = 'none'; }
 
         async function cargarDatos() {
             try {
-                const res = await fetch('/api/pagos');
+                const res = await fetch('/api/pagos', { headers: { 'Authorization': `Bearer ${sessionStorage.getItem('token') || localStorage.getItem('token')}` }});
                 const data = await res.json();
-                if(data.status === 'success') {
-                    datosGlobales = data.data || [];
-                    filtrarTabla();
-                }
-            } catch (e) { console.error("Error al cargar registros.", e); }
+                if(data.status === 'success') { datosGlobales = data.data || []; filtrarTabla(); }
+            } catch (e) {}
         }
 
         function filtrarTabla() {
             const fNom = safeString(document.getElementById('filtroNombre').value);
             const fDoc = safeString(document.getElementById('filtroDoc').value);
             const fCon = safeString(document.getElementById('filtroContrato').value);
-
-            datosFiltradosActual = datosGlobales.filter(d => {
-                return safeString(d.nombre_completo).includes(fNom) &&
-                       safeString(d.numero_documento).includes(fDoc) &&
-                       safeString(d.contrato).includes(fCon);
-            });
-
+            datosFiltradosActual = datosGlobales.filter(d => safeString(d.nombre_completo).includes(fNom) && safeString(d.numero_documento).includes(fDoc) && safeString(d.contrato).includes(fCon));
             document.getElementById('lblTotalRegistros').innerText = datosFiltradosActual.length;
-            paginaActual = 1;
-            renderizarPagina();
-            calcularMetricas(datosFiltradosActual);
+            paginaActual = 1; renderizarPagina(); calcularMetricas(datosFiltradosActual);
         }
 
-        function cambiarTamanioPagina() {
-            paginaActual = 1;
-            renderizarPagina();
-        }
-
-        function cambiarPagina(nuevaPagina) {
-            paginaActual = nuevaPagina;
-            renderizarPagina();
-        }
+        function cambiarTamanioPagina() { paginaActual = 1; renderizarPagina(); }
+        function cambiarPagina(np) { paginaActual = np; renderizarPagina(); }
 
         function renderizarPagina() {
             const limitVal = document.getElementById('pageSize').value;
-            const totalRegistros = datosFiltradosActual.length;
-            let datosMostrar = [];
-
-            let limite = limitVal === 'ALL' ? totalRegistros : parseInt(limitVal);
+            const total = datosFiltradosActual.length;
+            let limite = limitVal === 'ALL' ? total : parseInt(limitVal);
             if (limite <= 0) limite = 1;
-
-            const totalPaginas = Math.ceil(totalRegistros / limite) || 1;
-            if (paginaActual > totalPaginas) paginaActual = totalPaginas;
-
-            if (limitVal === 'ALL') {
-                datosMostrar = datosFiltradosActual;
-                document.getElementById('lblInfoPaginacion').innerText = `Mostrando ${totalRegistros > 0 ? 1 : 0} a ${totalRegistros} de ${totalRegistros} registros`;
-            } else {
-                const startIndex = (paginaActual - 1) * limite;
-                const endIndex = Math.min(startIndex + limite, totalRegistros);
-                datosMostrar = datosFiltradosActual.slice(startIndex, endIndex);
-                document.getElementById('lblInfoPaginacion').innerText = `Mostrando ${totalRegistros > 0 ? startIndex + 1 : 0} a ${endIndex} de ${totalRegistros} registros`;
-            }
-
-            renderizarTablaHTML(datosMostrar);
-            renderizarControlesPaginacion(totalPaginas);
+            const tPaginas = Math.ceil(total / limite) || 1;
+            if (paginaActual > tPaginas) paginaActual = tPaginas;
+            const sIdx = limitVal === 'ALL' ? 0 : (paginaActual - 1) * limite;
+            const eIdx = limitVal === 'ALL' ? total : Math.min(sIdx + limite, total);
+            document.getElementById('lblInfoPaginacion').innerText = `Mostrando ${total > 0 ? sIdx + 1 : 0} a ${eIdx} de ${total} registros`;
+            renderizarTablaHTML(datosFiltradosActual.slice(sIdx, eIdx));
+            renderizarControlesPaginacion(tPaginas);
         }
 
-        function renderizarControlesPaginacion(totalPaginas) {
-            const container = document.getElementById('controlesPaginacion');
-            container.innerHTML = '';
-
-            if (totalPaginas <= 1 || document.getElementById('pageSize').value === 'ALL') return;
-
-            const btnPrev = document.createElement('button');
-            btnPrev.className = 'page-btn';
-            btnPrev.innerHTML = '<i class="fas fa-chevron-left"></i>';
-            btnPrev.disabled = paginaActual === 1;
-            btnPrev.onclick = () => cambiarPagina(paginaActual - 1);
-            container.appendChild(btnPrev);
-
-            for (let i = 1; i <= totalPaginas; i++) {
-                if (i === 1 || i === totalPaginas || (i >= paginaActual - 1 && i <= paginaActual + 1)) {
-                    const btn = document.createElement('button');
-                    btn.className = `page-btn ${i === paginaActual ? 'active' : ''}`;
-                    btn.innerText = i;
-                    btn.onclick = () => cambiarPagina(i);
-                    container.appendChild(btn);
+        function renderizarControlesPaginacion(tPaginas) {
+            const c = document.getElementById('controlesPaginacion'); c.innerHTML = '';
+            if (tPaginas <= 1 || document.getElementById('pageSize').value === 'ALL') return;
+            const bp = document.createElement('button'); bp.className = 'page-btn'; bp.innerHTML = '<i class="fas fa-chevron-left"></i>'; bp.disabled = paginaActual === 1; bp.onclick = () => cambiarPagina(paginaActual - 1); c.appendChild(bp);
+            for (let i = 1; i <= tPaginas; i++) {
+                if (i === 1 || i === tPaginas || (i >= paginaActual - 1 && i <= paginaActual + 1)) {
+                    const b = document.createElement('button'); b.className = `page-btn ${i === paginaActual ? 'active' : ''}`; b.innerText = i; b.onclick = () => cambiarPagina(i); c.appendChild(b);
                 } else if (i === paginaActual - 2 || i === paginaActual + 2) {
-                    const span = document.createElement('span');
-                    span.innerText = '...';
-                    span.style.padding = '5px';
-                    span.style.color = '#6b7280';
-                    span.style.fontWeight = 'bold';
-                    container.appendChild(span);
+                    const s = document.createElement('span'); s.innerText = '...'; s.style.padding = '5px'; s.style.color = '#6b7280'; s.style.fontWeight = 'bold'; c.appendChild(s);
                 }
             }
-
-            const btnNext = document.createElement('button');
-            btnNext.className = 'page-btn';
-            btnNext.innerHTML = '<i class="fas fa-chevron-right"></i>';
-            btnNext.disabled = paginaActual === totalPaginas;
-            btnNext.onclick = () => cambiarPagina(paginaActual + 1);
-            container.appendChild(btnNext);
+            const bn = document.createElement('button'); bn.className = 'page-btn'; bn.innerHTML = '<i class="fas fa-chevron-right"></i>'; bn.disabled = paginaActual === tPaginas; bn.onclick = () => cambiarPagina(paginaActual + 1); c.appendChild(bn);
         }
 
         function renderizarTablaHTML(datos) {
-            const tbody = document.getElementById('tbodyPagos');
-            tbody.innerHTML = '';
-
-            const rolActual = safeString(sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario'));
-            const esAdmin = rolActual.includes('admin');
-
-            if(datos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="12" style="padding:40px; color:#6b7280; font-size: 1rem;"><i class="fas fa-folder-open fa-2x" style="color:#d1d5db; display:block; margin-bottom:10px;"></i> No se encontraron registros.</td></tr>`;
-                return;
-            }
+            const tbody = document.getElementById('tbodyPagos'); tbody.innerHTML = '';
+            const esAdmin = safeString(sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario')).includes('admin');
+            if(datos.length === 0) { tbody.innerHTML = `<tr><td colspan="13" style="padding:40px; color:#6b7280; font-size: 1rem;"><i class="fas fa-folder-open fa-2x" style="color:#d1d5db; display:block; margin-bottom:10px;"></i> No se encontraron registros.</td></tr>`; return; }
 
             datos.forEach(d => {
                 const btnDelete = esAdmin ? `<button type="button" onclick="eliminarRegistro(${d.id})" class="btn-action btn-danger" style="padding: 6px 10px; margin-left: 6px;"><i class="fas fa-trash-alt"></i></button>` : '';
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="white-space: nowrap;">
-                            <button type="button" onclick='editarRegistro(${JSON.stringify(d).replace(/'/g, "&apos;")})' class="btn-action btn-warning" style="padding: 6px 10px; color:#fff;"><i class="fas fa-edit"></i></button>
-                            ${btnDelete}
-                        </td>
-                        <td><strong style="color:#1f2937;">${d.contrato}</strong></td>
-                        <td style="color:#4b5563;">${d.numero_documento}</td>
-                        <td style="text-align: left; white-space: nowrap; color:#111827; font-weight:500;">${d.nombre_completo}</td>
-                        <td style="white-space: nowrap;">${formatMoneda(d.valor_contrato)}</td>
-                        <td>${d.numero_pagos}</td>
-                        <td><span style="background:#fef3c7; color:#d97706; padding:2px 8px; border-radius:12px; font-weight:bold;">${d.adicion_contrato || 0}</span></td>
-                        <td><span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:4px; font-weight:bold; font-size:1.05rem;">${d.cuenta}</span></td>
-                        <td style="white-space: nowrap;">${formatMoneda(d.pago_mensual)}</td>
-                        <td style="color:#059669; font-weight:700; white-space: nowrap;">${formatMoneda(d.pago_real)}</td>
-                        <td style="color:#0284c7; font-weight:700; white-space: nowrap;">${formatMoneda(d.egresos)}</td>
-                        <td style="font-size: 0.75rem; text-align: left; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color:#6b7280;" title="${d.observaciones || ''}">${d.observaciones || ''}</td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr>
+                    <td style="white-space: nowrap;"><button type="button" onclick='editarRegistro(${JSON.stringify(d).replace(/'/g, "&apos;")})' class="btn-action btn-warning" style="padding: 6px 10px; color:#fff;"><i class="fas fa-edit"></i></button>${btnDelete}</td>
+                    <td><strong style="color:#1f2937;">${d.contrato}</strong></td>
+                    <td style="font-size:0.75rem;">${d.fecha_inicio_contrato || '--'} <br>al<br> ${d.fecha_terminacion_contrato || '--'}</td>
+                    <td>${d.link_secop ? `<a href="${d.link_secop}" target="_blank" style="color:#0ea5e9;"><i class="fas fa-external-link-alt"></i> Ver</a>` : 'N/A'}</td>
+                    <td style="color:#4b5563;">${d.numero_documento}</td>
+                    <td style="text-align: left; white-space: nowrap; color:#111827; font-weight:500;">${d.nombre_completo}</td>
+                    <td style="white-space: nowrap;">${formatMoneda(d.valor_contrato)}</td>
+                    <td>${d.numero_pagos}</td>
+                    <td><span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:4px; font-weight:bold; font-size:1.05rem;">${d.cuenta}</span></td>
+                    <td style="color:#059669; font-weight:700; white-space: nowrap;">${formatMoneda(d.pago_real)}</td>
+                    <td style="color:#0284c7; font-weight:700; white-space: nowrap;">${d.numero_egreso || '-'}</td>
+                    <td><span style="background:#fef3c7; color:#d97706; padding:2px 8px; border-radius:12px; font-weight:bold;">${d.adicion_contrato || 0}</span></td>
+                    <td style="font-size: 0.75rem; text-align: left; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color:#6b7280;" title="${d.observaciones || ''}">${d.observaciones || ''}</td>
+                </tr>`;
             });
         }
 
-        function calcularMetricas(datosFiltrados) {
+        function calcularMetricas(df) {
             const panel = document.getElementById('panelResumen');
-
-            if (datosFiltrados.length === 0) {
-                panel.style.display = 'none';
-                return;
-            }
-
-            const contratoRef = safeString(datosFiltrados[0].contrato);
-            const esMismoContrato = datosFiltrados.every(d => safeString(d.contrato) === contratoRef);
-
-            if (!esMismoContrato) {
-                panel.style.display = 'none';
-                return;
-            }
+            if (df.length === 0 || !df.every(d => safeString(d.contrato) === safeString(df[0].contrato))) { panel.style.display = 'none'; return; }
 
             panel.style.display = 'block';
-            const base = datosFiltrados[0];
+            const base = df[0];
             document.getElementById('lblResumenContrato').innerText = base.contrato;
 
-            const valorContratoInicial = parseFloat(base.valor_contrato) || 0;
-            const numPagosInicial = parseInt(base.numero_pagos) || 0;
-            const maximaAdicion = Math.max(...datosFiltrados.map(d => parseInt(d.adicion_contrato) || 0));
-            const totalPagosPactados = numPagosInicial + maximaAdicion;
+            const vIni = parseFloat(base.valor_contrato) || 0, nPi = parseInt(base.numero_pagos) || 0;
+            const maxAd = Math.max(...df.map(d => parseInt(d.adicion_contrato) || 0));
+            const totalPagosPactados = nPi + maxAd;
 
-            let totalCobradoReal = 0, totalEgresos = 0, totalNoEjecutado = 0, sumaPagoMensualProgramado = 0;
-
-            datosFiltrados.forEach(d => {
-                const pm = parseFloat(d.pago_mensual) || 0;
-                const pr = parseFloat(d.pago_real) || 0;
-                const eg = parseFloat(d.egresos) || 0;
-
-                totalCobradoReal += pr;
-                totalEgresos += eg;
-                totalNoEjecutado += (pm - pr);
-                sumaPagoMensualProgramado += pm;
+            let tr = 0, tne = 0, pmprog = 0, cteso = 0;
+            df.forEach(d => {
+                const pm = parseFloat(d.pago_mensual) || 0, pr = parseFloat(d.pago_real) || 0;
+                tr += pr; tne += (pm - pr); pmprog += pm;
+                if (d.numero_egreso && d.numero_egreso.trim() !== '') cteso++;
             });
 
-            const promedioPagoMensual = numPagosInicial > 0 ? (valorContratoInicial / numPagosInicial) : 0;
-            const valorContratoTotalizado = valorContratoInicial + (promedioPagoMensual * maximaAdicion);
+            // Lógica de fechas base para el resumen
+            let fInicio = base.fecha_inicio_contrato || 'No registrada';
+            let fFin = base.fecha_terminacion_contrato || 'No registrada';
+            let fFinInicial = fFin;
 
-            const cuentasRegistradas = datosFiltrados.length;
-            const cuentasPendientes = totalPagosPactados - cuentasRegistradas;
-            const faltaPorCobrar = valorContratoTotalizado - sumaPagoMensualProgramado;
+            if (base.fecha_terminacion_contrato && maxAd > 0) {
+                let dFin = new Date(base.fecha_terminacion_contrato + 'T12:00:00Z');
+                dFin.setMonth(dFin.getMonth() - maxAd);
+                fFinInicial = dFin.toISOString().split('T')[0];
+            }
 
-            document.getElementById('resVC').innerText = formatMoneda(valorContratoTotalizado);
-            document.getElementById('resTC').innerText = formatMoneda(totalCobradoReal);
-            document.getElementById('resEG').innerText = formatMoneda(totalEgresos);
-            document.getElementById('resNE').innerText = formatMoneda(totalNoEjecutado);
-            document.getElementById('resFC').innerText = formatMoneda(faltaPorCobrar > 0 ? faltaPorCobrar : 0);
-            document.getElementById('resPR').innerText = cuentasRegistradas;
-            document.getElementById('resPF').innerText = cuentasPendientes > 0 ? cuentasPendientes : 0;
+            const prom = nPi > 0 ? (vIni / nPi) : 0;
+            const vTotal = vIni + (prom * maxAd);
+            const cReg = df.length;
+            const cPend = totalPagosPactados - cReg;
+            const fpc = vTotal - pmprog;
 
-            const txtAdicion = maximaAdicion > 0
-                ? `Actualmente cuenta con una adición de <strong>${maximaAdicion}</strong> mes(es) al contrato`
-                : `Actualmente no cuenta con adiciones en el contrato`;
+            document.getElementById('resVC').innerText = formatMoneda(vTotal);
+            document.getElementById('resTC').innerText = formatMoneda(tr);
+            document.getElementById('resEG').innerText = cteso;
+            document.getElementById('resNE').innerText = formatMoneda(tne);
+            document.getElementById('resFC').innerText = formatMoneda(fpc > 0 ? fpc : 0);
+            document.getElementById('resPR').innerText = cReg;
+            document.getElementById('resPF').innerText = cPend > 0 ? cPend : 0;
+
+            const secopLink = base.link_secop ? `<a href="${base.link_secop}" target="_blank" style="color:#34d399; text-decoration:underline;">Ver en SECOP <i class="fas fa-external-link-alt"></i></a>` : 'No registrado';
+            const txtFechas = `Inició el <strong>${fInicio}</strong> con terminación inicial el <strong>${fFinInicial}</strong>.`;
+            const txtAdicion = maxAd > 0
+                ? `Actualmente cuenta con <strong>${maxAd}</strong> mes(es) de adición al contrato, modificando su fecha de terminación al <strong>${fFin}</strong>, para un total definitivo de <strong>${totalPagosPactados}</strong> pagos proyectados.`
+                : `No cuenta con adiciones, manteniendo su fecha de terminación el <strong>${fFin}</strong> para un total de <strong>${totalPagosPactados}</strong> pagos proyectados.`;
 
             document.getElementById('resumenEjecutivoTexto').innerHTML = `
                 <strong style="font-size: 1.1rem; color:#fff;"><i class="fas fa-file-signature"></i> Resumen Ejecutivo Contractual:</strong><br><br>
-                El contrato <strong>${base.contrato}</strong> a nombre del profesional <strong>${base.nombre_completo}</strong> tiene un valor proyectado ajustado de <strong>${formatMoneda(valorContratoTotalizado)}</strong>.
-                Se pactaron inicialmente <strong>${numPagosInicial}</strong> pagos. ${txtAdicion}, para un total definitivo de <strong>${totalPagosPactados}</strong> pagos proyectados.
-                El valor promedio esperado por cada cuenta es de <strong>${formatMoneda(promedioPagoMensual)}</strong>.<br><br>
-                Hasta la fecha, se han registrado y verificado <strong>${cuentasRegistradas}</strong> pagos de cuentas de cobro en el sistema, restando <strong>${cuentasPendientes > 0 ? cuentasPendientes : 0}</strong> pagos por tramitar.
-                El profesional ha recibido un pago real acumulado facturado de <strong>${formatMoneda(totalCobradoReal)}</strong>, con egresos confirmados por el área de tesorería por un valor de <strong>${formatMoneda(totalEgresos)}</strong>.
-                Se reporta un total no ejecutado (ya sea por descuentos de ley, retenciones o incumplimiento de metas operativas) equivalente a <strong>${formatMoneda(totalNoEjecutado)}</strong>.
-                El saldo restante proyectado por cobrar en la vigencia operativa es de <strong>${formatMoneda(faltaPorCobrar > 0 ? faltaPorCobrar : 0)}</strong>.
+                El contrato <strong>${base.contrato}</strong> a nombre del profesional <strong>${base.nombre_completo}</strong> tiene un valor proyectado ajustado de <strong>${formatMoneda(vTotal)}</strong>.<br>
+                ${txtFechas} Se pactaron inicialmente <strong>${nPi}</strong> pagos. ${txtAdicion}<br>
+                Link SECOP asignado: ${secopLink}.<br><br>
+                El valor promedio esperado por cuenta es de <strong>${formatMoneda(prom)}</strong>.<br>
+                Hasta la fecha, se han registrado <strong>${cReg}</strong> pagos, restando <strong>${cPend > 0 ? cPend : 0}</strong> por tramitar.
+                El profesional ha recibido un pago real acumulado facturado de <strong>${formatMoneda(tr)}</strong>, contando con <strong>${cteso}</strong> asignación(es) de pago confirmadas por Tesorería.
+                Se reporta un total no ejecutado equivalente a <strong>${formatMoneda(tne)}</strong>. El saldo restante proyectado por cobrar es de <strong>${formatMoneda(fpc > 0 ? fpc : 0)}</strong>.
             `;
         }
 
         async function guardarRegistro(e) {
-            e.preventDefault();
-            cerrarAlerta();
+            e.preventDefault(); cerrarAlerta();
             const id = document.getElementById('pago_id').value;
             const payload = {
-                nombre_completo: document.getElementById('nombre_completo').value,
-                numero_documento: document.getElementById('numero_documento').value,
-                contrato: document.getElementById('contrato').value,
-                valor_contrato: document.getElementById('valor_contrato').value,
-                numero_pagos: document.getElementById('numero_pagos').value,
-                cuenta: document.getElementById('cuenta').value,
-                pago_mensual: document.getElementById('pago_mensual').value,
-                pago_real: document.getElementById('pago_real').value,
-                egresos: document.getElementById('egresos').value,
-                adicion_contrato: document.getElementById('adicion_contrato').value,
-                observaciones: document.getElementById('observaciones').value
+                nombre_completo: document.getElementById('nombre_completo').value, numero_documento: document.getElementById('numero_documento').value,
+                contrato: document.getElementById('contrato').value, fecha_inicio_contrato: document.getElementById('fecha_inicio_contrato').value,
+                fecha_terminacion_contrato: document.getElementById('fecha_terminacion_contrato').value, link_secop: document.getElementById('link_secop').value,
+                valor_contrato: document.getElementById('valor_contrato').value, numero_pagos: document.getElementById('numero_pagos').value,
+                cuenta: document.getElementById('cuenta').value, pago_mensual: document.getElementById('pago_mensual').value,
+                pago_real: document.getElementById('pago_real').value, numero_egreso: document.getElementById('numero_egreso').value,
+                adicion_contrato: document.getElementById('adicion_contrato').value, observaciones: document.getElementById('observaciones').value
             };
-
-            const url = id ? `/api/pagos/${id}` : '/api/pagos';
             try {
-                const res = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await fetch(id ? `/api/pagos/${id}` : '/api/pagos', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('token') || localStorage.getItem('token')}` }, body: JSON.stringify(payload) });
                 const data = await res.json();
                 if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
-                mostrarAlerta(data.message, 'exito');
-                limpiarForm();
-                cargarDatos();
-            } catch (error) { mostrarAlerta("Falla de comunicación con el servidor.", "error"); }
+                mostrarAlerta(data.message, 'exito'); limpiarForm(); cargarDatos();
+            } catch (err) { mostrarAlerta("Falla de comunicación HTTP.", "error"); }
         }
 
         function editarRegistro(d) {
             cerrarAlerta();
             document.getElementById('pago_id').value = d.id;
-            document.getElementById('nombre_completo').value = d.nombre_completo;
-            document.getElementById('numero_documento').value = d.numero_documento;
-            document.getElementById('contrato').value = d.contrato;
-            document.getElementById('valor_contrato').value = d.valor_contrato;
-            document.getElementById('numero_pagos').value = d.numero_pagos;
-            document.getElementById('cuenta').value = d.cuenta;
-            document.getElementById('pago_mensual').value = d.pago_mensual;
-            document.getElementById('pago_real').value = d.pago_real;
-            document.getElementById('egresos').value = d.egresos;
-            document.getElementById('adicion_contrato').value = d.adicion_contrato || 0;
-            document.getElementById('observaciones').value = d.observaciones || '';
+            ['nombre_completo','numero_documento','contrato','fecha_inicio_contrato','fecha_terminacion_contrato','link_secop','valor_contrato','numero_pagos','cuenta','pago_mensual','pago_real','numero_egreso','adicion_contrato','observaciones'].forEach(f => {
+                if(document.getElementById(f)) document.getElementById(f).value = d[f] || (f==='adicion_contrato'?'0':'');
+            });
+            inputBaseTerminacion.value = document.getElementById('fecha_terminacion_contrato').value;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function limpiarForm() {
-            cerrarAlerta();
-            document.getElementById('formPago').reset();
-            document.getElementById('pago_id').value = '';
-            document.getElementById('adicion_contrato').value = '0';
-        }
+        function limpiarForm() { cerrarAlerta(); document.getElementById('formPago').reset(); document.getElementById('pago_id').value = ''; inputBaseTerminacion.value = ''; }
 
         async function eliminarRegistro(id) {
-            cerrarAlerta();
-            if(!confirm("¿Está seguro de eliminar este registro de pago de forma permanente?")) return;
+            cerrarAlerta(); if(!confirm("¿Está seguro de eliminar este registro de pago de forma permanente?")) return;
             try {
-                const res = await fetch(`/api/pagos/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/pagos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${sessionStorage.getItem('token') || localStorage.getItem('token')}` }});
                 const data = await res.json();
                 if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
-                mostrarAlerta(data.message, 'exito');
-                cargarDatos();
+                mostrarAlerta(data.message, 'exito'); cargarDatos();
             } catch (e) { mostrarAlerta("Falla al solicitar eliminación al servidor.", "error"); }
         }
 
         async function subirCSV() {
-            cerrarAlerta();
-            const fileInput = document.getElementById('archivoCsv');
-            if(!fileInput.files.length) { mostrarAlerta("Por favor, seleccione un archivo CSV delimitado por punto y coma (;).", "error"); return; }
-
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
+            cerrarAlerta(); const f = document.getElementById('archivoCsv'); if(!f.files.length) return mostrarAlerta("Seleccione archivo.", "error");
+            const fd = new FormData(); fd.append('file', f.files[0]);
             try {
-                const res = await fetch('/api/pagos/upload', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
-                mostrarAlerta(data.message, 'exito');
-                fileInput.value = '';
-                cargarDatos();
+                const res = await fetch('/api/pagos/upload', { method: 'POST', headers: { 'Authorization': `Bearer ${sessionStorage.getItem('token') || localStorage.getItem('token')}` }, body: fd });
+                const data = await res.json(); if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
+                mostrarAlerta(data.message, 'exito'); f.value = ''; cargarDatos();
             } catch (e) { mostrarAlerta("Falla crítica procesando el archivo CSV.", "error"); }
         }
     </script>
