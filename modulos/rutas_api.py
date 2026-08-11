@@ -33,7 +33,7 @@ def token_requerido(f):
         t = request.headers.get('Authorization', '').split()[1] if 'Bearer' in request.headers.get('Authorization', '') else None
         if not t: return jsonify({'status': 'error', 'message': 'Acceso denegado. Token faltante.'}), 401
         try: d = jwt.decode(t, SECRET_KEY, algorithms=['HS256'])
-        except Exception as e: return jsonify({'status': 'error', 'message': 'Token manipulado o expirado.'}), 401
+        except Exception: return jsonify({'status': 'error', 'message': 'Token manipulado o expirado.'}), 401
         return f(d['sub'], d['rol'], *args, **kwargs)
     return decorador
 
@@ -55,23 +55,20 @@ def api_login():
 @limiter.limit("10 per hour")
 def api_guardar_acceso():
     fd = request.form.to_dict()
-    if fd.get('validacion_bot_oculta', '') or not str(fd.get('correo', '')).strip(): return jsonify({"status": "error", "message": "Datos inválidos/bot detectado."}), 400
+    if fd.get('validacion_bot_oculta', '') or not str(fd.get('correo', '')).strip(): return jsonify({"status": "error", "message": "Datos inválidos."}), 400
     if procesar_y_guardar_solicitud(fd, request.files.get('seguridad_social')):
-        nc = fd.get('nombre_completo') or f"{fd.get('primer_nombre', '')} {fd.get('primer_apellido', '')}".strip()
-        notificar_nuevo_registro("Formulario de Acceso", f"👤 *{nc}*\n📄 *{fd.get('numero_documento', 'N/A')}*\n📧 *{fd.get('correo')}*")
+        notificar_nuevo_registro("Formulario de Acceso", f"👤 *{fd.get('nombre_completo') or fd.get('numero_documento')}*\n📧 *{fd.get('correo')}*")
         return jsonify({"status": "success", "message": "Solicitud registrada."})
     return jsonify({"status": "error", "message": "Error al guardar."}), 500
 
 @api_bp.route('/api/descargar_pdf_acceso', methods=['POST'])
 @token_requerido
-@limiter.limit("20 per hour")
 def api_descargar_pdf_acceso(u, r):
     try: return Response(generar_documento_pdf(request.json), mimetype='application/pdf', headers={'Content-Disposition': f"attachment;filename=Solicitud_{request.json.get('numero_documento', '000')}.pdf"})
     except: return jsonify({"status": "error", "message": "Error generando PDF."}), 500
 
 @api_bp.route('/api/listar_accesos', methods=['GET'])
 @token_requerido
-@limiter.limit("60 per minute")
 def api_listar_accesos(u, r):
     try:
         with engine.connect() as conn:
@@ -103,13 +100,13 @@ def auth_ind_cob():
     t, c = str(request.json.get('territorio', '')).strip().upper(), str(request.json.get('codigo', '')).strip()
     with engine.connect() as conn:
         row = conn.execute(text("SELECT * FROM territorios_cobertura WHERE territorio = :t"), {"t": t}).mappings().fetchone()
-        if not row or row['bloqueado']: return jsonify({"status": "error", "message": "Territorio bloqueado o inexistente."}), 403
+        if not row or row['bloqueado']: return jsonify({"status": "error", "message": "Territorio bloqueado/inexistente."}), 403
         if row['codigo_ingreso'] == c:
             conn.execute(text("UPDATE territorios_cobertura SET intentos_fallidos = 0 WHERE territorio = :t"), {"t": t}); conn.commit()
             return jsonify({"status": "success", "token_sesion": generar_token_jwt(t, 'territorio'), "territorio": t})
         int_f = row['intentos_fallidos'] + 1
         conn.execute(text("UPDATE territorios_cobertura SET intentos_fallidos = :i, bloqueado = :b WHERE territorio = :t"), {"i": int_f, "b": int_f >= 3, "t": t}); conn.commit()
-        return jsonify({"status": "error", "message": "Código incorrecto/bloqueado."}), 401
+        return jsonify({"status": "error", "message": "Código incorrecto."}), 401
 
 @api_bp.route('/api/indicadores_<tipo>/datos', methods=['GET'])
 @cache.cached(timeout=60, query_string=True)
@@ -131,15 +128,17 @@ def save_ind(u, r, tipo):
         for i in d.get('indicadores', []): conn.execute(text(ins), {**p, "id_ind": i['id'], "num": i.get('num'), "den": i.get('den'), "porc": i.get('porc'), "obs": i.get('obs')})
     return jsonify({"status": "success", "message": "Guardado."})
 
-# --- PAGOS (GET, POST, PUT, DELETE, UPLOAD) ---
+# --- PAGOS ---
 def extrae_pago(d):
     return {
         "nc": str(d.get('nombre_completo', '')).upper()[:200], "nd": str(d.get('numero_documento', ''))[:20],
         "con": str(d.get('contrato', '')).upper()[:50], "fic": p_dat(d.get('fecha_inicio_contrato')),
         "ftc": p_dat(d.get('fecha_terminacion_contrato')), "ls": str(d.get('link_secop', '')).strip(),
-        "vc": p_num(d.get('valor_contrato')), "np": int(p_num(d.get('numero_pagos'))), "cta": int(p_num(d.get('cuenta'))),
+        "vc": p_num(d.get('valor_contrato')), "np": str(d.get('numero_pagos', '')).strip()[:20], "cta": int(p_num(d.get('cuenta'))),
         "pm": p_num(d.get('pago_mensual')), "pr": p_num(d.get('pago_real')), "ne": str(d.get('numero_egreso', ''))[:50],
-        "adc": int(p_num(d.get('adicion_contrato'))), "obs": str(d.get('observaciones', '')).upper()[:500]
+        "adc": int(p_num(d.get('adicion_contrato'))), "obs": str(d.get('observaciones', '')).upper()[:500],
+        "cdp": str(d.get('numero_cdp', '')).strip()[:50], "rp": str(d.get('numero_rp', '')).strip()[:50],
+        "nsup": str(d.get('nombre_supervisor', '')).upper()[:200], "csup": str(d.get('cedula_supervisor', '')).strip()[:20]
     }
 
 @api_bp.route('/seguimiento_pagos', methods=['GET'])
@@ -153,20 +152,20 @@ def get_pagos():
 @token_requerido
 def crear_pago(u, r):
     d = extrae_pago(request.get_json(silent=True) or {})
-    if not all([d['con'], d['cta'], d['ne'], d['fic'], d['ftc'], d['ls']]): return jsonify({"status": "error", "message": "Faltan campos obligatorios."}), 400
+    if not all([d['con'], d['cta'], d['ne'], d['fic'], d['ftc'], d['ls'], d['cdp'], d['nsup']]): return jsonify({"status": "error", "message": "Faltan campos obligatorios."}), 400
     with engine.begin() as conn:
         if conn.execute(text("SELECT 1 FROM seguimientos_pagos WHERE UPPER(contrato)=:con AND cuenta=:cta"), d).fetchone(): return jsonify({"status": "error", "message": "Cuenta duplicada."}), 400
-        conn.execute(text("INSERT INTO seguimientos_pagos (nombre_completo, numero_documento, contrato, fecha_inicio_contrato, fecha_terminacion_contrato, link_secop, valor_contrato, numero_pagos, cuenta, pago_mensual, pago_real, numero_egreso, adicion_contrato, observaciones) VALUES (:nc, :nd, :con, :fic, :ftc, :ls, :vc, :np, :cta, :pm, :pr, :ne, :adc, :obs)"), d)
+        conn.execute(text("INSERT INTO seguimientos_pagos (nombre_completo, numero_documento, contrato, fecha_inicio_contrato, fecha_terminacion_contrato, link_secop, valor_contrato, numero_pagos, cuenta, pago_mensual, pago_real, numero_egreso, adicion_contrato, observaciones, numero_cdp, numero_rp, nombre_supervisor, cedula_supervisor) VALUES (:nc, :nd, :con, :fic, :ftc, :ls, :vc, :np, :cta, :pm, :pr, :ne, :adc, :obs, :cdp, :rp, :nsup, :csup)"), d)
     return jsonify({"status": "success", "message": "Guardado."})
 
 @api_bp.route('/api/pagos/<int:pid>', methods=['PUT'])
 @token_requerido
 def actualizar_pago(u, r, pid):
     d = {**extrae_pago(request.get_json(silent=True) or {}), "id": pid}
-    if not all([d['con'], d['cta'], d['ne'], d['fic'], d['ftc'], d['ls']]): return jsonify({"status": "error", "message": "Faltan campos obligatorios."}), 400
+    if not all([d['con'], d['cta'], d['ne'], d['fic'], d['ftc'], d['ls']]): return jsonify({"status": "error", "message": "Faltan campos."}), 400
     with engine.begin() as conn:
-        if conn.execute(text("SELECT 1 FROM seguimientos_pagos WHERE UPPER(contrato)=:con AND cuenta=:cta AND id!=:id"), d).fetchone(): return jsonify({"status": "error", "message": "Cuenta duplicada."}), 400
-        conn.execute(text("UPDATE seguimientos_pagos SET nombre_completo=:nc, numero_documento=:nd, contrato=:con, fecha_inicio_contrato=:fic, fecha_terminacion_contrato=:ftc, link_secop=:ls, valor_contrato=:vc, numero_pagos=:np, cuenta=:cta, pago_mensual=:pm, pago_real=:pr, numero_egreso=:ne, adicion_contrato=:adc, observaciones=:obs WHERE id=:id"), d)
+        if conn.execute(text("SELECT 1 FROM seguimientos_pagos WHERE UPPER(contrato)=:con AND cuenta=:cta AND id!=:id"), d).fetchone(): return jsonify({"status": "error", "message": "Duplicado."}), 400
+        conn.execute(text("UPDATE seguimientos_pagos SET nombre_completo=:nc, numero_documento=:nd, contrato=:con, fecha_inicio_contrato=:fic, fecha_terminacion_contrato=:ftc, link_secop=:ls, valor_contrato=:vc, numero_pagos=:np, cuenta=:cta, pago_mensual=:pm, pago_real=:pr, numero_egreso=:ne, adicion_contrato=:adc, observaciones=:obs, numero_cdp=:cdp, numero_rp=:rp, nombre_supervisor=:nsup, cedula_supervisor=:csup WHERE id=:id"), d)
     return jsonify({"status": "success", "message": "Actualizado."})
 
 @api_bp.route('/api/pagos/<int:pid>', methods=['DELETE'])
@@ -188,7 +187,7 @@ def upload_csv(u, r):
                 d = extrae_pago(row)
                 if (d['con'], d['cta']) in ext: return jsonify({"status": "error", "message": f"Cuenta {d['cta']} duplicada en {d['con']}."}), 400
                 ext.add((d['con'], d['cta']))
-                conn.execute(text("INSERT INTO seguimientos_pagos (nombre_completo, numero_documento, contrato, fecha_inicio_contrato, fecha_terminacion_contrato, link_secop, valor_contrato, numero_pagos, cuenta, pago_mensual, pago_real, numero_egreso, adicion_contrato, observaciones) VALUES (:nc, :nd, :con, :fic, :ftc, :ls, :vc, :np, :cta, :pm, :pr, :ne, :adc, :obs)"), d)
+                conn.execute(text("INSERT INTO seguimientos_pagos (nombre_completo, numero_documento, contrato, fecha_inicio_contrato, fecha_terminacion_contrato, link_secop, valor_contrato, numero_pagos, cuenta, pago_mensual, pago_real, numero_egreso, adicion_contrato, observaciones, numero_cdp, numero_rp, nombre_supervisor, cedula_supervisor) VALUES (:nc, :nd, :con, :fic, :ftc, :ls, :vc, :np, :cta, :pm, :pr, :ne, :adc, :obs, :cdp, :rp, :nsup, :csup)"), d)
         return jsonify({"status": "success", "message": "Carga masiva completada."})
     except Exception as e: return jsonify({"status": "error", "message": "Error procesando CSV."}), 500
 
@@ -206,7 +205,8 @@ def generar_pisis(u, r, anexo):
         out.write(f"1|NI|{nit}|{fim}|{fc}|{len(pagos)*2}\n"); cons = 1
         for p in pagos:
             fi, ft, o, cc, ne = p['fecha_inicio_contrato'] or '1900-01-01', p['fecha_terminacion_contrato'] or '1900-01-01', limpiar_ansi(p['observaciones']) or 'PRESTACION DE SERVICIOS', limpiar_ansi(p['contrato']), limpiar_ansi(p['numero_egreso']) or str(p['cuenta'])
-            out.write(f"3|{cons}|{idr}|{nit}|I|1|{cc}|{fi}|{ft}|{o[:500]}|{p['valor_contrato']:.2f}|CC|{limpiar_ansi(p['numero_documento'])}|{limpiar_ansi(p['nombre_completo'])[:100]}|||\n")
+            nsup, csup = limpiar_ansi(p.get('nombre_supervisor', ''))[:100], limpiar_ansi(p.get('cedula_supervisor', ''))[:17]
+            out.write(f"3|{cons}|{idr}|{nit}|I|1|{cc}|{fi}|{ft}|{o[:500]}|{p['valor_contrato']:.2f}|CC|{limpiar_ansi(p['numero_documento'])[:17]}|{limpiar_ansi(p['nombre_completo'])[:100]}|CC|{csup}|{nsup}\n")
             out.write(f"5|{cons+1}|{idr}|{nit}|I|1|{cc}|1|{ne}|{fc}|{p['pago_real']:.2f}|{p['pago_real']:.2f}|||\n")
             cons += 2
     elif anexo.upper() == 'APS124CCFP':
