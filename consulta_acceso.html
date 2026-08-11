@@ -16,16 +16,20 @@
         .btn-action { background: #004b87; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
         .btn-action:hover { transform: translateY(-1px); filter: brightness(1.1); }
         .btn-danger { background: #dc3545; }
+        .btn-warning { background: #f59e0b; color: white; }
         .btn-info { background: #0ea5e9; }
+        .btn-success { background: #10b981; }
         .toolbar-table { display: flex; justify-content: space-between; align-items: center; margin: 0 20px 15px 20px; padding: 15px 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
         .table-container { margin: 0 20px; overflow-x: auto; max-height: 600px; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1000px; }
-        th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1100px; }
+        th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; text-transform: uppercase; user-select: none; }
+        th.sortable:hover { background: #003366; cursor: pointer; }
         td { padding: 12px 10px; border-bottom: 1px solid #f3f4f6; text-align: center; color: #4b5563; }
         tr:hover { background-color: #f0fdfa; }
         .alerta-dinamica { display: none; align-items: center; justify-content: space-between; padding: 16px 20px; margin-bottom: 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
         .alerta-error { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-left: 6px solid #dc2626; }
         .alerta-exito { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-left: 6px solid #059669; }
+        .alerta-info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-left: 6px solid #0ea5e9; }
     </style>
 </head>
 <body>
@@ -54,12 +58,13 @@
                 <thead>
                     <tr>
                         <th>Acciones</th>
-                        <th>Fecha Solicitud</th>
-                        <th>N° Documento</th>
-                        <th>Nombre Completo</th>
-                        <th>Perfil Profesional</th>
-                        <th>Celular</th>
-                        <th>Correo</th>
+                        <th class="sortable" data-sort="fecha_solicitud" onclick="ordenarTabla('fecha_solicitud')">Fecha Solicitud <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="numero_documento" onclick="ordenarTabla('numero_documento')">N° Documento <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="nombre_completo" onclick="ordenarTabla('nombre_completo')">Nombre Completo <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="perfil_profesional" onclick="ordenarTabla('perfil_profesional')">Perfil Profesional <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="celular" onclick="ordenarTabla('celular')">Celular <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="correo" onclick="ordenarTabla('correo')">Correo <i class="fas fa-sort"></i></th>
+                        <th>Soporte MSPS</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyAccesos"></tbody>
@@ -70,10 +75,10 @@
     <script src="/static/js/layout.js"></script>
     <script>
         let datosGlobales = [];
+        let sortCol = null;
+        let sortAsc = true;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarDatos();
-        });
+        document.addEventListener('DOMContentLoaded', () => { cargarDatos(); });
 
         function getHeaders() {
             const token = sessionStorage.getItem('token') || localStorage.getItem('token');
@@ -82,24 +87,19 @@
                 setTimeout(() => window.location.href = '/login', 2000);
                 throw new Error("No token");
             }
-            return {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            };
+            return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
         }
 
         function mostrarAlerta(mensaje, tipo) {
             const alerta = document.getElementById('alertaGlobal');
             const msjSpan = document.getElementById('alertaMensaje');
             alerta.className = `alerta-dinamica alerta-${tipo}`;
-            msjSpan.innerHTML = `<i class="fas ${tipo === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${mensaje}`;
+            msjSpan.innerHTML = `<i class="fas ${tipo === 'error' ? 'fa-exclamation-triangle' : (tipo === 'info' ? 'fa-info-circle' : 'fa-check-circle')}"></i> ${mensaje}`;
             alerta.style.display = 'flex';
-            if (tipo === 'exito') setTimeout(cerrarAlerta, 5000);
+            if (tipo === 'exito' || tipo === 'error') setTimeout(cerrarAlerta, 5000);
         }
 
-        function cerrarAlerta() {
-            document.getElementById('alertaGlobal').style.display = 'none';
-        }
+        function cerrarAlerta() { document.getElementById('alertaGlobal').style.display = 'none'; }
 
         async function cargarDatos() {
             try {
@@ -113,6 +113,21 @@
             }
         }
 
+        function ordenarTabla(columna) {
+            if (sortCol === columna) {
+                sortAsc = !sortAsc;
+            } else {
+                sortCol = columna;
+                sortAsc = true;
+            }
+
+            document.querySelectorAll('th.sortable i').forEach(icon => icon.className = 'fas fa-sort');
+            const iconActivo = document.querySelector(`th[data-sort="${columna}"] i`);
+            if (iconActivo) iconActivo.className = sortAsc ? 'fas fa-sort-up' : 'fas fa-sort-down';
+
+            filtrarTabla();
+        }
+
         function renderizarTabla(datos) {
             const tbody = document.getElementById('tbodyAccesos');
             tbody.innerHTML = '';
@@ -121,20 +136,23 @@
             const esAdmin = rolActual.includes('admin') || rolActual.includes('coordinador');
 
             if(datos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; color:#6b7280;">No se encontraron registros.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="padding:20px; color:#6b7280;">No se encontraron registros.</td></tr>`;
                 return;
             }
 
             datos.forEach(d => {
                 const nombreComp = d.nombre_completo || `${d.primer_nombre} ${d.primer_apellido}`;
-                const btnDelete = esAdmin ? `<button title="Eliminar" onclick="eliminarRegistro(${d.id})" class="btn-action btn-danger"><i class="fas fa-trash-alt"></i></button>` : '';
-                const btnEmail = esAdmin ? `<button title="Enviar Aval al Correo" onclick="enviarCorreoAval(${d.id})" class="btn-action" style="background:#10b981;"><i class="fas fa-envelope"></i></button>` : '';
+                const btnDelete = esAdmin ? `<button title="Eliminar Base de Datos" onclick="eliminarRegistro(${d.id})" class="btn-action btn-danger"><i class="fas fa-trash-alt"></i></button>` : '';
+                const btnEmail = esAdmin ? `<button title="Aprobar y Enviar Aval" onclick="enviarCorreoAval(${d.id})" class="btn-action btn-success"><i class="fas fa-check"></i></button>` : '';
+                const btnDeny = esAdmin ? `<button title="Denegar por Adjunto" onclick="denegarAcceso(${d.id})" class="btn-action btn-warning"><i class="fas fa-times"></i></button>` : '';
+                const urlSoporte = (d.seguridad_social_url && d.seguridad_social_url !== 'ALMACENADO_EN_BD') ? `<a href="${d.seguridad_social_url}" target="_blank" style="color:#0ea5e9; text-decoration:underline;">Ver Adjunto</a>` : 'N/A';
 
                 tbody.innerHTML += `
                     <tr>
                         <td style="white-space: nowrap;">
                             <button title="Descargar PDF" onclick='descargarPDF(${JSON.stringify(d).replace(/'/g, "&apos;")})' class="btn-action btn-info"><i class="fas fa-file-pdf"></i></button>
                             ${btnEmail}
+                            ${btnDeny}
                             ${btnDelete}
                         </td>
                         <td>${d.fecha_solicitud || 'N/A'}</td>
@@ -143,6 +161,7 @@
                         <td>${d.perfil_profesional || 'N/A'}</td>
                         <td>${d.celular || 'N/A'}</td>
                         <td>${d.correo || 'N/A'}</td>
+                        <td>${urlSoporte}</td>
                     </tr>
                 `;
             });
@@ -152,11 +171,33 @@
             const fDoc = document.getElementById('filtroDoc').value.trim().toLowerCase();
             const fNom = document.getElementById('filtroNombre').value.trim().toLowerCase();
 
-            const filtrados = datosGlobales.filter(d => {
+            let filtrados = datosGlobales.filter(d => {
                 const nombreComp = String(d.nombre_completo || `${d.primer_nombre} ${d.primer_apellido}`).toLowerCase();
                 const doc = String(d.numero_documento || '').toLowerCase();
                 return doc.includes(fDoc) && nombreComp.includes(fNom);
             });
+
+            if (sortCol) {
+                filtrados.sort((a, b) => {
+                    let valA = a[sortCol] || '';
+                    let valB = b[sortCol] || '';
+
+                    if (sortCol === 'numero_documento' || sortCol === 'celular') {
+                        valA = parseInt(valA) || 0;
+                        valB = parseInt(valB) || 0;
+                    } else if (sortCol === 'fecha_solicitud') {
+                        valA = new Date(valA).getTime() || 0;
+                        valB = new Date(valB).getTime() || 0;
+                    } else {
+                        valA = String(valA).toLowerCase();
+                        valB = String(valB).toLowerCase();
+                    }
+
+                    if (valA < valB) return sortAsc ? -1 : 1;
+                    if (valA > valB) return sortAsc ? 1 : -1;
+                    return 0;
+                });
+            }
 
             document.getElementById('lblTotalRegistros').innerText = filtrados.length;
             renderizarTabla(filtrados);
@@ -164,15 +205,11 @@
 
         async function enviarCorreoAval(id) {
             cerrarAlerta();
-            if(!confirm("¿Desea enviar el correo de Aval a este usuario?")) return;
-
+            if(!confirm("¿Confirmas que la documentación es correcta y deseas enviar el correo de APROBACIÓN?")) return;
             try {
-                mostrarAlerta("Enviando correo, por favor espere...", "info"); // Estado de carga
-                const res = await fetch(`/api/enviar_aval/${id}`, {
-                    method: 'POST', headers: getHeaders()
-                });
+                mostrarAlerta("Enviando correo de aprobación, por favor espere...", "info");
+                const res = await fetch(`/api/enviar_aval/${id}`, { method: 'POST', headers: getHeaders() });
                 const data = await res.json();
-
                 if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
                 mostrarAlerta(data.message, 'exito');
             } catch (e) {
@@ -180,10 +217,24 @@
             }
         }
 
+        async function denegarAcceso(id) {
+            cerrarAlerta();
+            if(!confirm("¿Estás seguro de DENEGAR la solicitud? Se enviará un correo notificando el error en 'Mi Seguridad Social' y se eliminará el registro.")) return;
+            try {
+                mostrarAlerta("Enviando correo de denegación y eliminando solicitud...", "info");
+                const res = await fetch(`/api/denegar_acceso/${id}`, { method: 'POST', headers: getHeaders() });
+                const data = await res.json();
+                if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
+                mostrarAlerta(data.message, 'exito');
+                cargarDatos();
+            } catch (e) {
+                if(e.message !== "No token") mostrarAlerta("Error de red al denegar.", "error");
+            }
+        }
+
         async function eliminarRegistro(id) {
             cerrarAlerta();
             if(!confirm("¿Está seguro de eliminar esta solicitud de acceso de forma permanente?")) return;
-
             try {
                 const res = await fetch(`/api/eliminar_acceso/${id}`, { method: 'DELETE', headers: getHeaders() });
                 const data = await res.json();
@@ -205,13 +256,8 @@
                 }
                 const blob = await res.blob();
                 const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Solicitud_Acceso_${datosFila.numero_documento}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
+                const a = document.createElement('a'); a.href = url; a.download = `Solicitud_Acceso_${datosFila.numero_documento}.pdf`;
+                document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
             } catch (e) {
                 if(e.message !== "No token") mostrarAlerta("Falla al intentar descargar el PDF.", "error");
             }
