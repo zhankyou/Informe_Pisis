@@ -4,12 +4,12 @@ import base64
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+
 
 def _get_gmail_service():
     creds = Credentials(
@@ -22,13 +22,17 @@ def _get_gmail_service():
     )
     return build("gmail", "v1", credentials=creds)
 
+
 def enviar_correo_aval(destinatario, nombre_usuario):
     sender_email = os.getenv("GMAIL_SENDER")
     if not sender_email:
         logging.error("Variable GMAIL_SENDER no encontrada en .env")
         return False
 
-    asunto = "Aval de Ingreso y Accesos a Plataformas - INFORME APS"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Aval de Ingreso y Accesos a Plataformas - INFORME APS"
+    msg["From"] = f"Soporte INFORME APS <{sender_email}>"
+    msg["To"] = destinatario
 
     html_content = f"""
     <html>
@@ -60,25 +64,64 @@ def enviar_correo_aval(destinatario, nombre_usuario):
     </body>
     </html>
     """
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = asunto
-    msg["From"] = f"Soporte INFORME APS <{sender_email}>"
-    msg["To"] = destinatario
+    msg.attach(MIMEText("Su solicitud de acceso ha sido aprobada.", "plain"))
     msg.attach(MIMEText(html_content, "html"))
-
-    raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
     try:
         service = _get_gmail_service()
-        service.users().messages().send(
-            userId="me", body={"raw": raw_message}
-        ).execute()
-        logging.info(f"Correo de aval enviado exitosamente a: {destinatario}")
+        service.users().messages().send(userId="me",
+                                        body={"raw": base64.urlsafe_b64encode(msg.as_bytes()).decode()}).execute()
         return True
-    except HttpError as e:
-        logging.error(f"Error API Gmail al enviar a {destinatario}: {e}")
-        return False
     except Exception as e:
-        logging.error(f"Error crítico al enviar correo (Gmail API) a {destinatario}: {e}")
+        logging.error(f"Error SMTP Aval: {e}")
+        return False
+
+
+def enviar_correo_denegacion(destinatario, nombre_usuario):
+    sender_email = os.getenv("GMAIL_SENDER")
+    if not sender_email: return False
+
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = "Rechazo de Solicitud de Acceso (Documentación Inválida) - INFORME APS"
+    msg['From'] = f"Soporte INFORME APS <{sender_email}>"
+    msg['To'] = destinatario
+
+    text_content = f"Hola, {nombre_usuario}. Su solicitud fue rechazada por inconsistencias en el adjunto de Mi Seguridad Social."
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head><meta charset="UTF-8"></head>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.6; max-width: 650px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <h2 style="color: #dc2626; border-bottom: 2px solid #fecaca; padding-bottom: 10px;">Solicitud Denegada</h2>
+        <p style="font-size: 16px;">Hola, <strong>{nombre_usuario}</strong>.</p>
+        <p style="font-size: 16px;">Su solicitud de acceso a las plataformas PISIS y formularios operativos ha sido <strong>rechazada</strong> debido a que el archivo adjunto suministrado no cumple con los criterios exigidos.</p>
+
+        <div style="background-color: #f8fafc; border-left: 5px solid #004b87; padding: 18px; margin: 25px 0; border-radius: 6px;">
+            <h3 style="margin-top: 0; color: #004b87; font-size: 1.1rem;">Sobre el adjunto de "Mi Seguridad Social"</h3>
+            <p style="margin-bottom: 15px; font-size: 0.95rem;">El soporte de "Mi Seguridad Social" solicitado corresponde al registro exitoso en dicha plataforma. Encontrará el paso a paso detallado (en formato PDF y videos instructivos) para el ingreso y creación de usuario en la página web dentro del material de apoyo suministrado en el siguiente enlace:</p>
+
+            <a href="https://drive.google.com/drive/folders/18N7IifT4nZSn-eZcp7G-fkT3-ZyeXKP8" target="_blank" style="display: inline-block; background-color: #004b87; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; font-size: 0.95rem;">
+                📁 Acceder al Material de Apoyo (Google Drive)
+            </a>
+
+            <p style="margin-top: 15px; margin-bottom: 0; font-size: 0.95rem;">Una vez finalizado el registro de manera exitosa, <strong>debe tomar un pantallazo y cargar dicha imagen como evidencia obligatoria</strong> en el formulario.</p>
+        </div>
+
+        <p style="font-size: 15px; color: #4b5563;">Por favor, diligencie nuevamente la solicitud asegurándose de adjuntar la evidencia correcta.</p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 30px 0 20px 0;">
+        <p style="font-size: 12px; color: #9ca3af; text-align: center;">Este es un correo generado automáticamente por el sistema SI-APS. Por favor no responda a este mensaje.</p>
+    </body>
+    </html>
+    """
+    msg.attach(MIMEText(text_content, 'plain'))
+    msg.attach(MIMEText(html_content, 'html'))
+
+    try:
+        service = _get_gmail_service()
+        service.users().messages().send(userId="me",
+                                        body={"raw": base64.urlsafe_b64encode(msg.as_bytes()).decode()}).execute()
+        return True
+    except Exception as e:
+        logging.error(f"Error SMTP Denegación: {e}")
         return False
