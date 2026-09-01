@@ -22,7 +22,7 @@
         .toolbar-table { display: flex; justify-content: space-between; align-items: center; margin: 0 20px 15px 20px; padding: 15px 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
         .table-container { margin: 0 20px; overflow-x: auto; max-height: 600px; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1100px; }
-        th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; text-transform: uppercase; user-select: none; }
+        th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; text-transform: uppercase; user-select: none; transition: background 0.2s; }
         th.sortable:hover { background: #003366; cursor: pointer; }
         td { padding: 12px 10px; border-bottom: 1px solid #f3f4f6; text-align: center; color: #4b5563; }
         tr:hover { background-color: #f0fdfa; }
@@ -114,12 +114,8 @@
         }
 
         function ordenarTabla(columna) {
-            if (sortCol === columna) {
-                sortAsc = !sortAsc;
-            } else {
-                sortCol = columna;
-                sortAsc = true;
-            }
+            if (sortCol === columna) { sortAsc = !sortAsc; }
+            else { sortCol = columna; sortAsc = true; }
 
             document.querySelectorAll('th.sortable i').forEach(icon => icon.className = 'fas fa-sort');
             const iconActivo = document.querySelector(`th[data-sort="${columna}"] i`);
