@@ -144,7 +144,8 @@ def api_enviar_aval(u, r, rid):
 @api_bp.route('/api/denegar_acceso/<int:rid>', methods=['POST'])
 @token_requerido
 def api_denegar_acceso(u, r, rid):
-    if 'admin' not in r and 'coordinador' not in r: return jsonify({"status": "error"}), 403
+    if 'admin' not in r and 'coordinador' not in r: return jsonify(
+        {"status": "error", "message": "Privilegios insuficientes."}), 403
     with engine.connect() as conn:
         us = conn.execute(text("SELECT correo, nombre_completo, primer_nombre FROM solicitudes_acceso WHERE id = :id"),
                           {"id": rid}).mappings().fetchone()
