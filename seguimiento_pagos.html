@@ -11,46 +11,42 @@
         .main-content { min-height: 100vh; padding-bottom: 50px; }
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin: 20px; }
         .card { background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border-top: 5px solid #004b87; position: relative; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-2px); }
         .card-warning { border-top-color: #f59e0b; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px; letter-spacing: 0.3px; }
         .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; color: #1f2937; background-color: #f9fafb; transition: all 0.3s ease; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
         .form-group input:focus, .form-group select:focus { border-color: #00b09b; background-color: #ffffff; outline: none; box-shadow: 0 0 0 3px rgba(0, 176, 155, 0.15); }
-        .form-group input[readonly] { background-color: #e5e7eb; cursor: not-allowed; border-color: #d1d5db; color: #6b7280; font-weight: bold;}
+        .form-group input.locked { background-color: #e2e8f0; cursor: not-allowed; border-color: #cbd5e1; color: #475569; font-weight: 600; }
         .btn-action { background: #004b87; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn-action:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.15); filter: brightness(1.1); }
-        .btn-action:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .btn-action:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-action:disabled { cursor: not-allowed; opacity: 0.7; }
         .btn-danger { background: #dc3545; }
         .btn-warning { background: #f59e0b; color: white; }
         .btn-success { background: #10b981; }
         .btn-info { background: #0ea5e9; }
         .toolbar-table { display: flex; justify-content: space-between; align-items: center; margin: 0 20px 15px 20px; padding: 15px 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); flex-wrap: wrap; gap: 15px; }
-        .table-container { margin: 0 20px 20px 20px; overflow-x: auto; overflow-y: auto; max-height: 550px; background: #fff; border-radius: 12px 12px 0 0; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border-bottom: 1px solid #e5e7eb; }
+        .table-container { margin: 0 20px 20px 20px; overflow-x: auto; overflow-y: auto; max-height: 600px; background: #fff; border-radius: 12px 12px 0 0; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border-bottom: 1px solid #e5e7eb; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1400px; }
-        th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; }
+        th { background: #004b87; color: white; padding: 14px 12px; position: sticky; top: 0; z-index: 10; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; }
         td { padding: 12px 10px; border-bottom: 1px solid #f3f4f6; text-align: center; color: #4b5563; }
-        tr:hover { background-color: #f0fdfa; }
-        .pagination-container { display: flex; justify-content: space-between; align-items: center; background: #fff; margin: 0 20px 20px 20px; padding: 15px 20px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); flex-wrap: wrap; gap: 15px; }
+        tr:hover:not(.tr-parent):not(.tr-header) { background-color: #f8fafc; }
+        .tr-parent { background-color: #e0f2fe !important; border-top: 3px solid #0284c7; }
+        .tr-header { background-color: #f1f5f9 !important; font-weight: bold; color: #475569; font-size: 0.75rem; }
+        .pagination-container { display: flex; justify-content: space-between; align-items: center; background: #fff; margin: 0 20px 20px 20px; padding: 15px 20px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
         .page-btn { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .page-btn:hover:not(:disabled) { background: #e5e7eb; }
         .page-btn.active { background: #004b87; color: white; border-color: #004b87; }
-        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .resumen-panel { display: none; margin: 20px; background: #0f172a; color: white; border-radius: 12px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-left: 6px solid #10b981; }
+        .resumen-panel { display: none; margin: 20px; background: #0f172a; color: white; border-radius: 12px; padding: 24px; border-left: 6px solid #10b981; }
         .resumen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 20px; }
-        .resumen-item { background: rgba(255,255,255,0.05); padding: 18px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s; }
-        .resumen-item:hover { transform: translateY(-3px); background: rgba(255,255,255,0.08); }
-        .resumen-item span { display: block; font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600; }
-        .resumen-item strong { font-size: 1.3rem; color: #34d399; letter-spacing: 0.5px; }
+        .resumen-item { background: rgba(255,255,255,0.05); padding: 18px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .resumen-item span { display: block; font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+        .resumen-item strong { font-size: 1.3rem; color: #34d399; }
         .resumen-item.danger strong { color: #f87171; }
         .resumen-ejecutivo { margin-top: 24px; padding: 18px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; border-radius: 8px; color: #cbd5e1; font-size: 0.95rem; line-height: 1.7; text-align: justify; }
-        .resumen-ejecutivo strong { color: #f8fafc; font-weight: 600; }
-        .admin-only { display: none; }
-        .alerta-dinamica { display: none; align-items: center; justify-content: space-between; padding: 16px 20px; margin-bottom: 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .alerta-dinamica { display: none; align-items: center; justify-content: space-between; padding: 16px 20px; margin-bottom: 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
         .alerta-error { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-left: 6px solid #dc2626; }
         .alerta-exito { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-left: 6px solid #059669; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+        .admin-only { display: none; }
     </style>
 </head>
 <body>
@@ -60,34 +56,40 @@
 
         <div class="grid-cards">
             <div class="card">
-                <h3 style="margin-top: 0; color: #004b87; font-size: 1.2rem; margin-bottom: 20px;"><i class="fas fa-file-invoice-dollar" style="color:#00b09b;"></i> Registro de Pago</h3>
+                <h3 style="margin-top: 0; color: #004b87; font-size: 1.2rem; margin-bottom: 20px;"><i class="fas fa-file-invoice-dollar" style="color:#00b09b;"></i> Registro de Pago (Hijo)</h3>
+
+                <div style="background-color: #e0f2fe; padding: 12px 18px; border-radius: 6px; border-left: 4px solid #0284c7; margin-bottom: 20px; font-size: 0.85rem; color: #0369a1;">
+                    <i class="fas fa-info-circle"></i> <strong>Modo Rápido:</strong> Escriba el N° de Contrato. Si existe, los datos fijos se bloquearán automáticamente y el N° de Cuenta se auto-calculará. <strong>Si el contrato alcanza el límite financiero del 100%, se bloqueará la adición de cuentas.</strong>
+                </div>
+
                 <div id="alertaFormulario" class="alerta-dinamica"><span id="alertaMensaje"></span><button onclick="cerrarAlerta()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:inherit; padding:0;"><i class="fas fa-times"></i></button></div>
 
                 <form id="formPago" onsubmit="guardarRegistro(event)">
                     <input type="hidden" id="pago_id">
                     <input type="hidden" id="fecha_base_terminacion">
                     <div class="form-grid">
-                        <div class="form-group"><label>Nombre Completo *</label><input type="text" id="nombre_completo" required placeholder="Ej: Juan Perez"></div>
-                        <div class="form-group"><label>N° Documento *</label><input type="text" id="numero_documento" required placeholder="Sin puntos ni comas"></div>
-                        <div class="form-group"><label>N° Contrato *</label><input type="text" id="contrato" required placeholder="Ej: 001-2026"></div>
-                        <div class="form-group"><label>Fecha Inicio Contrato *</label><input type="date" id="fecha_inicio_contrato" required></div>
-                        <div class="form-group"><label>Fecha Terminación Contrato *</label><input type="date" id="fecha_terminacion_contrato" required></div>
-                        <div class="form-group"><label>Link SECOP *</label><input type="url" id="link_secop" required placeholder="https://..."></div>
-                        <div class="form-group"><label>N° CDP *</label><input type="number" id="numero_cdp" required></div>
-                        <div class="form-group"><label>N° RP *</label><input type="number" id="numero_rp" required></div>
-                        <div class="form-group"><label>Nombre Supervisor *</label><input type="text" id="nombre_supervisor" required></div>
-                        <div class="form-group"><label>Cédula Supervisor *</label><input type="number" id="cedula_supervisor" required></div>
-                        <div class="form-group"><label>Valor Contrato ($) *</label><input type="number" step="0.01" id="valor_contrato" required></div>
-                        <div class="form-group"><label>N° Pagos (Meses,Días) *</label><input type="text" id="numero_pagos" required readonly title="Autocalculado a partir de las fechas."></div>
-                        <div class="form-group"><label>Cuenta N° (A pagar) *</label><input type="number" id="cuenta" required></div>
+                        <div class="form-group"><label>N° Contrato *</label><input type="text" id="contrato" required placeholder="Ej: 001-2026" onkeyup="buscarContratoExistente()"></div>
+                        <div class="form-group"><label>Nombre Completo *</label><input type="text" id="nombre_completo" required placeholder="Ej: Juan Perez" class="parent-field"></div>
+                        <div class="form-group"><label>N° Documento *</label><input type="text" id="numero_documento" required placeholder="Sin puntos ni comas" class="parent-field"></div>
+                        <div class="form-group"><label>Fecha Inicio Contrato *</label><input type="date" id="fecha_inicio_contrato" required class="parent-field"></div>
+                        <div class="form-group"><label>Fecha Terminación Contrato *</label><input type="date" id="fecha_terminacion_contrato" required class="parent-field"></div>
+                        <div class="form-group"><label>Link SECOP *</label><input type="url" id="link_secop" required placeholder="https://..." class="parent-field"></div>
+                        <div class="form-group"><label>N° CDP *</label><input type="text" id="numero_cdp" required class="parent-field"></div>
+                        <div class="form-group"><label>N° RP *</label><input type="text" id="numero_rp" required class="parent-field"></div>
+                        <div class="form-group"><label>Nombre Supervisor *</label><input type="text" id="nombre_supervisor" required class="parent-field"></div>
+                        <div class="form-group"><label>Cédula Supervisor *</label><input type="text" id="cedula_supervisor" required class="parent-field"></div>
+                        <div class="form-group"><label>Valor Contrato ($) *</label><input type="number" step="0.01" id="valor_contrato" required class="parent-field"></div>
+                        <div class="form-group"><label>N° Pagos (Meses,Días) *</label><input type="text" id="numero_pagos" required readonly title="Autocalculado a partir de las fechas." style="background:#e5e7eb;"></div>
+
+                        <div class="form-group"><label>Cuenta N° (A pagar) *</label><input type="number" id="cuenta" required style="border-color: #0ea5e9; border-width: 2px;"></div>
                         <div class="form-group"><label>Pago Mensual Esperado ($) *</label><input type="number" step="0.01" id="pago_mensual" required></div>
                         <div class="form-group"><label>Pago Real Facturado ($) *</label><input type="number" step="0.01" id="pago_real" required></div>
                         <div class="form-group"><label>N° Egreso (Tesorería) *</label><input type="text" id="numero_egreso" required></div>
                         <div class="form-group"><label>Meses Adición *</label><input type="number" id="adicion_contrato" value="0" required></div>
-                        <div class="form-group" style="grid-column: 1 / -1;"><label>Observaciones</label><input type="text" id="observaciones" placeholder="Novedades en cuenta, motivos de descuento, etc."></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label>Observaciones (Del Pago)</label><input type="text" id="observaciones" placeholder="Novedades en esta cuenta, descuentos, etc."></div>
                     </div>
                     <div style="margin-top: 20px; display: flex; gap: 12px;">
-                        <button type="submit" class="btn-action btn-success"><i class="fas fa-save"></i> Guardar Registro</button>
+                        <button type="submit" id="btnSubmitForm" class="btn-action btn-success"><i class="fas fa-save"></i> Guardar Pago</button>
                         <button type="button" class="btn-action btn-warning" onclick="limpiarForm()"><i class="fas fa-eraser"></i> Limpiar / Nuevo</button>
                     </div>
                 </form>
@@ -98,13 +100,14 @@
                     <h3 style="margin-top: 0; color: #f59e0b;"><i class="fas fa-search"></i> Filtros y Búsqueda</h3>
                     <div class="form-group" style="margin-bottom: 12px;"><label>Nombre</label><input type="text" id="filtroNombre" oninput="filtrarTabla()"></div>
                     <div class="form-group" style="margin-bottom: 12px;"><label>Documento</label><input type="text" id="filtroDoc" oninput="filtrarTabla()"></div>
-                    <div class="form-group"><label>Contrato (Para ver Reporte)</label><input type="text" id="filtroContrato" oninput="filtrarTabla()"></div>
+                    <div class="form-group"><label>Contrato (Reporte Global)</label><input type="text" id="filtroContrato" oninput="filtrarTabla()"></div>
                 </div>
+
                 <div class="admin-only" style="margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
                     <h4 style="margin-top: 0; color: #dc3545;"><i class="fas fa-file-csv"></i> Carga Masiva (CSV)</h4>
                     <input type="file" id="archivoCsv" accept=".csv" style="margin-bottom: 12px; width: 100%; border: 1px dashed #dc3545; padding: 10px; border-radius: 8px;">
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn-action btn-danger" style="flex: 1;" onclick="subirCSV()"><i class="fas fa-upload"></i> Subir Archivo</button>
+                        <button class="btn-action btn-danger" style="flex: 1;" onclick="subirCSV()"><i class="fas fa-upload"></i> Subir</button>
                         <button class="btn-action btn-info" style="flex: 1;" onclick="descargarPlantillaCSV()"><i class="fas fa-download"></i> Plantilla</button>
                     </div>
                 </div>
@@ -113,7 +116,7 @@
 
         <div class="toolbar-table">
             <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
-                <label style="margin: 0; color: #4b5563;">Mostrar:</label>
+                <label style="margin: 0; color: #4b5563;">Mostrar Contratos:</label>
                 <select id="pageSize" onchange="cambiarTamanioPagina()" style="width: auto; padding: 6px 12px;">
                     <option value="5">5</option>
                     <option value="10" selected>10</option>
@@ -122,7 +125,7 @@
                 </select>
             </div>
             <div style="display: flex; align-items: center; gap: 20px;">
-                <div style="color: #6b7280;"><strong id="lblTotalRegistros" style="color:#004b87;">0</strong> registros filtrados</div>
+                <div style="color: #6b7280;"><strong id="lblTotalRegistros" style="color:#004b87;">0</strong> contratos encontrados</div>
                 <button class="btn-action btn-success" onclick="descargarDatosFiltrados()"><i class="fas fa-file-excel"></i> Exportar</button>
             </div>
         </div>
@@ -131,19 +134,14 @@
             <table id="tablaPagos">
                 <thead>
                     <tr>
-                        <th>Acciones</th>
-                        <th>Contrato</th>
-                        <th>CDP / RP</th>
-                        <th>Fechas</th>
-                        <th>Documento</th>
-                        <th>Nombre</th>
-                        <th>V. Contrato</th>
-                        <th>N° Pagos</th>
-                        <th>Cuenta</th>
-                        <th>Pago Real</th>
+                        <th style="width: 100px;">Acciones</th>
+                        <th>N° Cuenta</th>
                         <th>N° Egreso</th>
-                        <th>Supervisor</th>
-                        <th>Observaciones</th>
+                        <th>Fechas</th>
+                        <th>Pago Mensual</th>
+                        <th>Pago Real</th>
+                        <th>Adición</th>
+                        <th colspan="6">Observaciones</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyPagos"></tbody>
@@ -158,11 +156,11 @@
         <div class="resumen-panel" id="panelResumen">
             <h3 style="margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;"><i class="fas fa-chart-line" style="color:#10b981;"></i> Resumen de Ejecución del Contrato: <span id="lblResumenContrato" style="color:#34d399;"></span></h3>
             <div class="resumen-grid">
-                <div class="resumen-item"><span>V. Contrato (Proyectado)</span><strong id="resVC">$0</strong></div>
-                <div class="resumen-item"><span>Total Ejecutado Real</span><strong id="resTC">$0</strong></div>
+                <div class="resumen-item"><span>Total Valor Inicial</span><strong id="resVC">$0</strong></div>
+                <div class="resumen-item"><span>Total Adiciones</span><strong id="resTA">$0</strong></div>
+                <div class="resumen-item"><span>Total Valor Cobrado</span><strong id="resTC">$0</strong></div>
                 <div class="resumen-item"><span>Asignaciones Tesorería</span><strong id="resEG">0</strong></div>
-                <div class="resumen-item danger"><span>No Ejecutado (Metas)</span><strong id="resNE">$0</strong></div>
-                <div class="resumen-item"><span>Falta por Cobrar</span><strong id="resFC">$0</strong></div>
+                <div class="resumen-item danger"><span>Valor No Ejecutado</span><strong id="resNE">$0</strong></div>
                 <div class="resumen-item"><span>Cuentas Registradas</span><strong id="resPR">0</strong></div>
                 <div class="resumen-item danger"><span>Cuentas Pendientes</span><strong id="resPF">0</strong></div>
             </div>
@@ -172,10 +170,82 @@
 
     <script src="/static/js/layout.js"></script>
     <script>
-        let datosGlobales = [], datosFiltradosActual = [], paginaActual = 1;
+        let datosGlobales = [], datosFiltradosActual = [], contratosAgrupados = [], paginaActual = 1;
 
         const formatMoneda = (num) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num || 0);
         const safeString = (val) => String(val || '').trim().toLowerCase();
+
+        // ==========================================
+        // LÓGICA PADRE-HIJO (AUTOCOMPLETADO Y BLOQUEO)
+        // ==========================================
+        function buscarContratoExistente() {
+            const val = document.getElementById('contrato').value.trim().toUpperCase();
+            const esEdicion = document.getElementById('pago_id').value !== '';
+
+            if(!val || esEdicion) {
+                bloquearCamposPadre(false);
+                restaurarBotonGuardar();
+                return;
+            }
+
+            const existentes = datosGlobales.filter(d => String(d.contrato).toUpperCase() === val);
+            if(existentes.length > 0) {
+                const parent = existentes[0];
+                const pFields = ['nombre_completo','numero_documento','fecha_inicio_contrato','fecha_terminacion_contrato','link_secop','numero_cdp','numero_rp','nombre_supervisor','cedula_supervisor','valor_contrato'];
+
+                pFields.forEach(f => {
+                    if(document.getElementById(f)) document.getElementById(f).value = parent[f] || '';
+                });
+
+                inputBaseTerminacion.value = parent.fecha_terminacion_contrato;
+                bloquearCamposPadre(true);
+
+                const vIni = parseFloat(parent.valor_contrato) || 0;
+                const maxAd = Math.max(...existentes.map(d => parseInt(d.adicion_contrato) || 0));
+                const nPStr = String(parent.numero_pagos || '0').split(',');
+                const mP = parseInt(nPStr[0]) || 0; const dP = parseInt(nPStr[1]) || 0;
+                const nPiNum = mP + (dP / 30);
+                const prom = nPiNum > 0 ? (vIni / nPiNum) : 0;
+                const vTotal = vIni + (prom * maxAd);
+                const totalReal = existentes.reduce((acc, curr) => acc + (parseFloat(curr.pago_real)||0), 0);
+
+                if (totalReal >= vTotal) {
+                    mostrarAlerta("Este contrato ya ha sido ejecutado al 100%. No se pueden añadir más cuentas.", "error");
+                    const btn = document.getElementById('btnSubmitForm');
+                    btn.disabled = true;
+                    btn.style.background = "#94a3b8";
+                    btn.innerHTML = '<i class="fas fa-lock"></i> Contrato Cerrado';
+                } else {
+                    restaurarBotonGuardar();
+                    const maxCuenta = Math.max(...existentes.map(d => parseInt(d.cuenta) || 0));
+                    document.getElementById('cuenta').value = maxCuenta + 1;
+                    document.getElementById('pago_mensual').value = parent.pago_mensual;
+                }
+                recalcularFechas();
+            } else {
+                bloquearCamposPadre(false);
+                restaurarBotonGuardar();
+            }
+        }
+
+        function bloquearCamposPadre(bloquear) {
+            const pFields = ['nombre_completo','numero_documento','fecha_inicio_contrato','fecha_terminacion_contrato','link_secop','numero_cdp','numero_rp','nombre_supervisor','cedula_supervisor','valor_contrato'];
+            pFields.forEach(f => {
+                const el = document.getElementById(f);
+                if(el) {
+                    el.readOnly = bloquear;
+                    if(bloquear) el.classList.add('locked');
+                    else el.classList.remove('locked');
+                }
+            });
+        }
+
+        function restaurarBotonGuardar() {
+            const btn = document.getElementById('btnSubmitForm');
+            btn.disabled = false;
+            btn.style.background = "";
+            btn.innerHTML = '<i class="fas fa-save"></i> Guardar Pago';
+        }
 
         // ==========================================
         // AUTO-CÁLCULO DE FECHAS "Meses,Días"
@@ -192,8 +262,8 @@
                 const d1 = new Date(fi + 'T12:00:00Z'), d2 = new Date(ft + 'T12:00:00Z');
                 let m = (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
                 let d = d2.getDate() - d1.getDate() + 1;
-                if (d <= 0) { m--; const pM = new Date(d2.getFullYear(), d2.getMonth(), 0); d += pM.getDate(); }
-                if (d >= 30) { m++; d -= 30; }
+                if (d <= 0) { m--; d += 30; } // Cálculo estándar 30 días comerciales
+                if (d >= 30) { m += Math.floor(d / 30); d = d % 30; }
                 inputPagos.value = d > 0 ? `${m},${d}` : `${m}`;
                 inputBaseTerminacion.value = ft;
             } else if (fi && ad > 0 && inputBaseTerminacion.value) {
@@ -215,25 +285,6 @@
             cargarDatos();
         });
 
-        function exportarCSV(n, c) {
-            const l = document.createElement("a"); l.href = URL.createObjectURL(new Blob(["\ufeff" + c], { type: 'text/csv;charset=utf-8;' }));
-            l.download = n; l.style.visibility = 'hidden'; document.body.appendChild(l); l.click(); document.body.removeChild(l);
-        }
-
-        function descargarPlantillaCSV() {
-            const c = "nombre_completo;numero_documento;contrato;fecha_inicio_contrato;fecha_terminacion_contrato;link_secop;numero_cdp;numero_rp;nombre_supervisor;cedula_supervisor;valor_contrato;numero_pagos;cuenta;pago_mensual;pago_real;numero_egreso;adicion_contrato;observaciones\nJUAN PEREZ;1121932522;270-2026;2026-03-02;2026-07-01;https://secop...;1234;5678;SUPERVISOR UNO;987654;50000000;4;1;12500000;12500000;EG-12345;0;PAGO NORMAL\n";
-            exportarCSV("Plantilla_Cargue_Pagos.csv", c);
-        }
-
-        function descargarDatosFiltrados() {
-            if(datosFiltradosActual.length === 0) { mostrarAlerta("No hay registros.", "error"); return; }
-            let csv = "ID;CONTRATO;CDP;RP;FECHA_INICIO;FECHA_FIN;SECOP;DOCUMENTO;NOMBRE;V_CONTRATO;N_PAGOS;ADICION;CUENTA;PAGO_MES;PAGO_REAL;EGRESO;SUPERVISOR;CC_SUPERVISOR;OBSERVACIONES\n";
-            datosFiltradosActual.forEach(d => {
-                csv += `"${d.id}";"${d.contrato}";"${d.numero_cdp||''}";"${d.numero_rp||''}";"${d.fecha_inicio_contrato||''}";"${d.fecha_terminacion_contrato||''}";"${d.link_secop||''}";"${d.numero_documento}";"${d.nombre_completo}";"${d.valor_contrato}";"${d.numero_pagos}";"${d.adicion_contrato}";"${d.cuenta}";"${d.pago_mensual}";"${d.pago_real}";"${d.numero_egreso||''}";"${d.nombre_supervisor||''}";"${d.cedula_supervisor||''}";"${String(d.observaciones||'').replace(/"/g, '""')}"\n`;
-            });
-            exportarCSV("Reporte_Pagos_Filtrado.csv", csv);
-        }
-
         function mostrarAlerta(m, t) {
             const a = document.getElementById('alertaFormulario'); a.className = `alerta-dinamica alerta-${t}`;
             document.getElementById('alertaMensaje').innerHTML = `<i class="fas ${t === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${m}`;
@@ -249,10 +300,21 @@
             } catch (e) {}
         }
 
+        function agruparPorContrato(datosFlanos) {
+            const agrupacion = {};
+            datosFlanos.forEach(d => {
+                if(!agrupacion[d.contrato]) agrupacion[d.contrato] = { base: d, pagos: [] };
+                agrupacion[d.contrato].pagos.push(d);
+            });
+            return Object.values(agrupacion).sort((a,b) => b.base.id - a.base.id);
+        }
+
         function filtrarTabla() {
             const fN = safeString(document.getElementById('filtroNombre').value), fD = safeString(document.getElementById('filtroDoc').value), fC = safeString(document.getElementById('filtroContrato').value);
             datosFiltradosActual = datosGlobales.filter(d => safeString(d.nombre_completo).includes(fN) && safeString(d.numero_documento).includes(fD) && safeString(d.contrato).includes(fC));
-            document.getElementById('lblTotalRegistros').innerText = datosFiltradosActual.length;
+
+            contratosAgrupados = agruparPorContrato(datosFiltradosActual);
+            document.getElementById('lblTotalRegistros').innerText = contratosAgrupados.length;
             paginaActual = 1; renderizarPagina(); calcularMetricas(datosFiltradosActual);
         }
 
@@ -260,12 +322,13 @@
         function cambiarPagina(np) { paginaActual = np; renderizarPagina(); }
 
         function renderizarPagina() {
-            const lv = document.getElementById('pageSize').value, t = datosFiltradosActual.length;
+            const lv = document.getElementById('pageSize').value, t = contratosAgrupados.length;
             let lim = lv === 'ALL' ? t : parseInt(lv); if (lim <= 0) lim = 1;
             const tP = Math.ceil(t / lim) || 1; if (paginaActual > tP) paginaActual = tP;
             const sI = lv === 'ALL' ? 0 : (paginaActual - 1) * lim, eI = lv === 'ALL' ? t : Math.min(sI + lim, t);
-            document.getElementById('lblInfoPaginacion').innerText = `Mostrando ${t > 0 ? sI + 1 : 0} a ${eI} de ${t}`;
-            renderizarTablaHTML(datosFiltradosActual.slice(sI, eI)); renderizarControlesPaginacion(tP);
+
+            document.getElementById('lblInfoPaginacion').innerText = `Mostrando ${t > 0 ? sI + 1 : 0} a ${eI} de ${t} contratos`;
+            renderizarTablaHTML(contratosAgrupados.slice(sI, eI)); renderizarControlesPaginacion(tP);
         }
 
         function renderizarControlesPaginacion(tP) {
@@ -282,45 +345,116 @@
             const bn = document.createElement('button'); bn.className = 'page-btn'; bn.innerHTML = '<i class="fas fa-chevron-right"></i>'; bn.disabled = paginaActual === tP; bn.onclick = () => cambiarPagina(paginaActual + 1); c.appendChild(bn);
         }
 
-        function renderizarTablaHTML(datos) {
+        function renderizarTablaHTML(contratosRender) {
             const tb = document.getElementById('tbodyPagos'); tb.innerHTML = '';
             const esA = safeString(sessionStorage.getItem('rol_usuario') || localStorage.getItem('rol_usuario')).includes('admin');
-            if(datos.length === 0) { tb.innerHTML = `<tr><td colspan="13" style="padding:40px;"><i class="fas fa-folder-open fa-2x" style="color:#d1d5db; display:block;"></i> No se encontraron registros.</td></tr>`; return; }
 
-            datos.forEach(d => {
-                const bDel = esA ? `<button type="button" onclick="eliminarRegistro(${d.id})" class="btn-action btn-danger" style="padding:6px; margin-left:6px;"><i class="fas fa-trash-alt"></i></button>` : '';
-                tb.innerHTML += `<tr>
-                    <td style="white-space: nowrap;"><button type="button" onclick='editarRegistro(${JSON.stringify(d).replace(/'/g, "&apos;")})' class="btn-action btn-warning" style="padding:6px;"><i class="fas fa-edit"></i></button>${bDel}</td>
-                    <td><strong style="color:#1f2937;">${d.contrato}</strong></td>
-                    <td style="font-size:0.75rem;">CDP: ${d.numero_cdp||'-'}<br>RP: ${d.numero_rp||'-'}</td>
-                    <td style="font-size:0.75rem;">${d.fecha_inicio_contrato || '--'} <br>al<br> ${d.fecha_terminacion_contrato || '--'}</td>
-                    <td style="font-size:0.75rem;">${d.numero_documento}</td>
-                    <td style="text-align: left; font-size:0.8rem; font-weight:600;">${d.nombre_completo}</td>
-                    <td style="white-space: nowrap;">${formatMoneda(d.valor_contrato)}</td>
-                    <td>${d.numero_pagos}</td>
-                    <td><span style="background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-weight:bold;">${d.cuenta}</span></td>
-                    <td style="color:#059669; font-weight:700;">${formatMoneda(d.pago_real)}</td>
-                    <td style="color:#0284c7; font-weight:700;">${d.numero_egreso || '-'}</td>
-                    <td style="font-size:0.75rem;">${d.nombre_supervisor||'-'}</td>
-                    <td style="font-size:0.7rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${d.observaciones || ''}">${d.observaciones || ''}</td>
-                </tr>`;
+            if(contratosRender.length === 0) { tb.innerHTML = `<tr><td colspan="13" style="padding:40px;"><i class="fas fa-folder-open fa-2x" style="color:#d1d5db; display:block;"></i> No se encontraron registros.</td></tr>`; return; }
+
+            contratosRender.forEach(grp => {
+                const b = grp.base;
+                const totalReal = grp.pagos.reduce((acc, curr) => acc + (parseFloat(curr.pago_real)||0), 0);
+
+                const vIni = parseFloat(b.valor_contrato) || 0;
+                const maxAd = Math.max(...grp.pagos.map(d => parseInt(d.adicion_contrato) || 0));
+
+                // Extraer el N de pagos original para cálculos sin importar lo que el DB tenga almacenado como string
+                const nPStr = String(b.numero_pagos || '0').split(',');
+                const mP = parseInt(nPStr[0]) || 0; const dP = parseInt(nPStr[1]) || 0;
+                const nPiNum = mP + (dP / 30);
+                const prom = nPiNum > 0 ? (vIni / nPiNum) : 0;
+                const vTotal = vIni + (prom * maxAd);
+
+                const completado = totalReal >= vTotal;
+                const btnAdd = completado
+                    ? `<span class="badge" style="background:#10b981; color:#fff; padding:6px 12px; font-size:0.8rem; border-radius:6px; font-weight:bold;"><i class="fas fa-lock"></i> Ejecutado 100%</span>`
+                    : `<button onclick="agregarPagoHijo('${b.contrato}')" class="btn-action btn-success" style="padding: 4px 10px; font-size: 0.8rem;"><i class="fas fa-plus"></i> Añadir Cuenta</button>`;
+
+                tb.innerHTML += `
+                <tr class="tr-parent">
+                    <td colspan="13" style="text-align: left; padding: 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong style="color: #0369a1; font-size: 1.1rem; margin-right: 15px;"><i class="fas fa-file-contract"></i> CONTRATO: ${b.contrato}</strong>
+                                <span style="margin-right: 15px;"><i class="fas fa-user-circle"></i> ${b.nombre_completo} (${b.numero_documento})</span>
+                                <span style="margin-right: 15px;"><i class="fas fa-dollar-sign"></i> Total: <strong>${formatMoneda(b.valor_contrato)}</strong></span>
+                                <span style="color: #059669;"><i class="fas fa-check-double"></i> Ejecutado: <strong>${formatMoneda(totalReal)}</strong></span>
+                            </div>
+                            <div>${btnAdd}</div>
+                        </div>
+                        <div style="font-size:0.75rem; color:#64748b; margin-top:5px;">
+                            <strong>SECOP:</strong> ${b.link_secop ? `<a href="${b.link_secop}" target="_blank" style="color:#0ea5e9;">Ver Link</a>` : 'N/A'} |
+                            <strong>CDP:</strong> ${b.numero_cdp||'-'} | <strong>RP:</strong> ${b.numero_rp||'-'} |
+                            <strong>Supervisor:</strong> ${b.nombre_supervisor||'-'} (${b.cedula_supervisor||'-'})
+                        </div>
+                    </td>
+                </tr>
+                <tr class="tr-header">
+                    <td>Acciones</td><td>N° Cuenta</td><td>N° Egreso</td><td>Fechas Contrato</td><td>Pago Mensual</td><td>Pago Real</td><td>Adición</td><td colspan="6">Observaciones de la Cuenta</td>
+                </tr>
+                `;
+
+                grp.pagos.sort((x, y) => parseInt(x.cuenta) - parseInt(y.cuenta)).forEach(d => {
+                    const bDel = esA ? `<button type="button" onclick="eliminarRegistro(${d.id})" class="btn-action btn-danger" style="padding:4px 8px; margin-left:6px;"><i class="fas fa-trash-alt"></i></button>` : '';
+                    tb.innerHTML += `<tr>
+                        <td style="white-space: nowrap;"><button type="button" onclick='editarRegistro(${JSON.stringify(d).replace(/'/g, "&apos;")})' class="btn-action btn-warning" style="padding:4px 8px; color:#fff;"><i class="fas fa-edit"></i></button>${bDel}</td>
+                        <td><span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:4px; font-weight:bold; font-size:1rem;">${d.cuenta}</span></td>
+                        <td><strong style="color:#0284c7;">${d.numero_egreso || '-'}</strong></td>
+                        <td style="font-size:0.75rem;">${d.fecha_inicio_contrato || '--'} al ${d.fecha_terminacion_contrato || '--'}</td>
+                        <td>${formatMoneda(d.pago_mensual)}</td>
+                        <td style="color:#059669; font-weight:700;">${formatMoneda(d.pago_real)}</td>
+                        <td><span style="background:#fef3c7; color:#d97706; padding:2px 8px; border-radius:12px; font-weight:bold;">${d.adicion_contrato || 0}</span></td>
+                        <td colspan="6" style="font-size: 0.75rem; text-align: left; color:#6b7280;">${d.observaciones || 'Sin observaciones'}</td>
+                    </tr>`;
+                });
             });
+        }
+
+        function agregarPagoHijo(contratoStr) {
+            limpiarForm();
+            const el = document.getElementById('contrato');
+            el.value = contratoStr;
+            el.dispatchEvent(new Event('keyup'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function calcularMetricas(df) {
             const p = document.getElementById('panelResumen');
             if (df.length === 0 || !df.every(d => safeString(d.contrato) === safeString(df[0].contrato))) { p.style.display = 'none'; return; }
-            p.style.display = 'block'; const b = df[0]; document.getElementById('lblResumenContrato').innerText = b.contrato;
 
-            const vIni = parseFloat(b.valor_contrato) || 0, maxAd = Math.max(...df.map(d => parseInt(d.adicion_contrato) || 0));
+            p.style.display = 'block';
+            const b = df[0];
+            document.getElementById('lblResumenContrato').innerText = b.contrato;
 
-            const nPStr = String(b.numero_pagos || '0').split(',');
-            const mP = parseInt(nPStr[0]) || 0;
-            const dP = parseInt(nPStr[1]) || 0;
-            const nPiNum = mP + (dP / 30);
+            // Fechas
+            let fInicio = b.fecha_inicio_contrato || 'No registrada';
+            let fFin = b.fecha_terminacion_contrato || 'No registrada';
+            const vIni = parseFloat(b.valor_contrato) || 0;
+            const maxAd = Math.max(...df.map(d => parseInt(d.adicion_contrato) || 0));
 
-            const tPactados = mP + maxAd + (dP > 0 ? (dP/30) : 0);
+            // Recalcular el total de pagos esperados basado estrictamente en fechas (sobreescribe fallos previos de DB)
+            let tPactados = 0;
+            let fFinIni = fFin;
+            if (fInicio !== 'No registrada' && fFin !== 'No registrada') {
+                const d1 = new Date(fInicio + 'T12:00:00Z'), d2 = new Date(fFin + 'T12:00:00Z');
+                let mm = (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+                let dd = d2.getDate() - d1.getDate() + 1;
+                if (dd <= 0) { mm--; dd += 30; }
+                if (dd >= 30) { mm += Math.floor(dd / 30); dd = dd % 30; }
 
+                tPactados = mm + (dd > 0 ? 1 : 0);
+
+                if (maxAd > 0) {
+                    let dFinIni = new Date(fFin + 'T12:00:00Z');
+                    dFinIni.setMonth(dFinIni.getMonth() - maxAd);
+                    fFinIni = dFinIni.toISOString().split('T')[0];
+                }
+            } else {
+                const nPStr = String(b.numero_pagos || '0').split(',');
+                tPactados = parseInt(nPStr[0]) || 0 + maxAd + (parseInt(nPStr[1]) > 0 ? 1 : 0);
+            }
+
+            // Pagos ejecutados
             let tr = 0, tne = 0, pmprog = 0, cteso = 0;
             df.forEach(d => {
                 const pm = parseFloat(d.pago_mensual) || 0, pr = parseFloat(d.pago_real) || 0;
@@ -328,44 +462,55 @@
                 if (d.numero_egreso && d.numero_egreso.trim() !== '') cteso++;
             });
 
-            let fInicio = b.fecha_inicio_contrato || 'No registrada', fFin = b.fecha_terminacion_contrato || 'No registrada', fFinIni = fFin;
-            if (b.fecha_terminacion_contrato && maxAd > 0) {
-                let dFin = new Date(b.fecha_terminacion_contrato + 'T12:00:00Z');
-                dFin.setMonth(dFin.getMonth() - maxAd);
-                fFinIni = dFin.toISOString().split('T')[0];
-            }
+            // Matemáticas de proyección
+            const nPStr = String(b.numero_pagos || '0').split(',');
+            const mP = parseInt(nPStr[0]) || 0; const dP = parseInt(nPStr[1]) || 0;
+            const nPiNum = mP + (dP / 30);
+            const prom = nPiNum > 0 ? (vIni / nPiNum) : 0;
+            const valAdiciones = prom * maxAd;
+            const vTotal = vIni + valAdiciones;
 
-            const prom = nPiNum > 0 ? (vIni / nPiNum) : 0, vTotal = vIni + (prom * maxAd);
-            const cReg = df.length, cPend = Math.ceil(tPactados - cReg), fpc = vTotal - pmprog;
+            const cReg = df.length;
+            const cPend = tPactados - cReg;
 
-            document.getElementById('resVC').innerText = formatMoneda(vTotal);
+            document.getElementById('resVC').innerText = formatMoneda(vIni);
+            document.getElementById('resTA').innerText = formatMoneda(valAdiciones);
             document.getElementById('resTC').innerText = formatMoneda(tr);
             document.getElementById('resEG').innerText = cteso;
             document.getElementById('resNE').innerText = formatMoneda(tne);
-            document.getElementById('resFC').innerText = formatMoneda(fpc > 0 ? fpc : 0);
             document.getElementById('resPR').innerText = cReg;
             document.getElementById('resPF').innerText = cPend > 0 ? cPend : 0;
 
             const secopLink = b.link_secop ? `<a href="${b.link_secop}" target="_blank" style="color:#34d399; text-decoration:underline;">Ver en SECOP <i class="fas fa-external-link-alt"></i></a>` : 'No registrado';
-            const txtFechas = `Inició el <strong>${fInicio}</strong> con terminación inicial el <strong>${fFinIni}</strong>.`;
             const txtAdicion = maxAd > 0
-                ? `Actualmente cuenta con <strong>${maxAd}</strong> mes(es) de adición al contrato, modificando su fecha de terminación al <strong>${fFin}</strong>, para un total definitivo de <strong>${Math.ceil(tPactados)}</strong> pagos proyectados.`
-                : `No cuenta con adiciones, manteniendo su fecha de terminación el <strong>${fFin}</strong> para un total de <strong>${Math.ceil(tPactados)}</strong> pagos proyectados.`;
+                ? `Actualmente cuenta con <strong>${maxAd}</strong> mes(es) de adición al contrato, modificando su fecha de terminación al <strong>${fFin}</strong>, para un total definitivo de <strong>${tPactados}</strong> pagos (cuentas) proyectados.`
+                : `No cuenta con adiciones, manteniendo su fecha de terminación el <strong>${fFin}</strong> para un total de <strong>${tPactados}</strong> pagos (cuentas) proyectados.`;
 
             document.getElementById('resumenEjecutivoTexto').innerHTML = `
                 <strong style="font-size: 1.1rem; color:#fff;"><i class="fas fa-file-signature"></i> Resumen Ejecutivo Contractual:</strong><br><br>
-                El contrato <strong>${b.contrato}</strong> a nombre del profesional <strong>${b.nombre_completo}</strong> tiene un valor proyectado ajustado de <strong>${formatMoneda(vTotal)}</strong>.<br>
-                ${txtFechas} Se pactaron inicialmente <strong>${b.numero_pagos}</strong> pagos (Meses, Días). ${txtAdicion}<br>
-                Link SECOP asignado: ${secopLink}. Supervisor: <strong>${b.nombre_supervisor || 'No registrado'}</strong>.<br><br>
+                El contrato <strong>${b.contrato}</strong> a nombre del profesional <strong>${b.nombre_completo}</strong> inició el <strong>${fInicio}</strong> con terminación inicial el <strong>${fFinIni}</strong>.
+                Se pactaron inicialmente <strong>${b.numero_pagos}</strong> pagos (Meses, Días). ${txtAdicion}<br>
+                Link SECOP asignado: ${secopLink}. Supervisor: <strong>${b.nombre_supervisor || 'No registrado'}</strong>.<br>
+
+                <ul style="margin: 15px 0; padding-left: 20px; background: rgba(0,0,0,0.2); padding: 15px 15px 15px 35px; border-radius: 6px;">
+                    <li><strong>Total valor inicial:</strong> ${formatMoneda(vIni)}</li>
+                    <li><strong>Total adiciones:</strong> ${formatMoneda(valAdiciones)}</li>
+                    <li><strong>Total valor proyectado:</strong> ${formatMoneda(vTotal)}</li>
+                    <li><strong style="color:#34d399;">Total valor cobrado (Real):</strong> ${formatMoneda(tr)}</li>
+                </ul>
+
                 El valor promedio esperado por cuenta es de <strong>${formatMoneda(prom)}</strong>.<br>
                 Hasta la fecha, se han registrado <strong>${cReg}</strong> pagos, restando <strong>${cPend > 0 ? cPend : 0}</strong> por tramitar.
-                El profesional ha recibido un pago real acumulado facturado de <strong>${formatMoneda(tr)}</strong>, contando con <strong>${cteso}</strong> asignación(es) de pago confirmadas por Tesorería.
-                Se reporta un total no ejecutado equivalente a <strong>${formatMoneda(tne)}</strong>. El saldo restante proyectado por cobrar es de <strong>${formatMoneda(fpc > 0 ? fpc : 0)}</strong>.
+                Cuenta con <strong>${cteso}</strong> asignación(es) de pago confirmadas por Tesorería.<br><br>
+                Se reporta un total no ejecutado (<strong>valor a liberar a favor de la ESE Municipal de Villavicencio</strong>) equivalente a <strong style="color:#f87171;">${formatMoneda(tne)}</strong>.
+                El saldo restante proyectado por cobrar es de <strong>${formatMoneda((vTotal - tr) > 0 ? (vTotal - tr) : 0)}</strong>.
             `;
         }
 
         async function guardarRegistro(e) {
             e.preventDefault(); cerrarAlerta(); const id = document.getElementById('pago_id').value;
+            bloquearCamposPadre(false);
+
             const payload = {
                 nombre_completo: document.getElementById('nombre_completo').value, numero_documento: document.getElementById('numero_documento').value,
                 contrato: document.getElementById('contrato').value, fecha_inicio_contrato: document.getElementById('fecha_inicio_contrato').value,
@@ -391,10 +536,19 @@
                 if(document.getElementById(f)) document.getElementById(f).value = d[f] || (f==='adicion_contrato'?'0':'');
             });
             inputBaseTerminacion.value = document.getElementById('fecha_terminacion_contrato').value;
+            bloquearCamposPadre(false);
+            restaurarBotonGuardar();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function limpiarForm() { cerrarAlerta(); document.getElementById('formPago').reset(); document.getElementById('pago_id').value = ''; inputBaseTerminacion.value = ''; }
+        function limpiarForm() {
+            cerrarAlerta();
+            document.getElementById('formPago').reset();
+            document.getElementById('pago_id').value = '';
+            inputBaseTerminacion.value = '';
+            bloquearCamposPadre(false);
+            restaurarBotonGuardar();
+        }
 
         async function eliminarRegistro(id) {
             cerrarAlerta(); if(!confirm("¿Eliminar permanente?")) return;
@@ -404,6 +558,16 @@
                 if (!res.ok || data.status === 'error') { mostrarAlerta(data.message, 'error'); return; }
                 mostrarAlerta(data.message, 'exito'); cargarDatos();
             } catch (e) { mostrarAlerta("Falla servidor.", "error"); }
+        }
+
+        function exportarCSV(n, c) { const l = document.createElement("a"); l.href = URL.createObjectURL(new Blob(["\ufeff" + c], { type: 'text/csv;charset=utf-8;' })); l.download = n; l.style.visibility = 'hidden'; document.body.appendChild(l); l.click(); document.body.removeChild(l); }
+        function descargarPlantillaCSV() { exportarCSV("Plantilla_Cargue_Pagos.csv", "nombre_completo;numero_documento;contrato;fecha_inicio_contrato;fecha_terminacion_contrato;link_secop;numero_cdp;numero_rp;nombre_supervisor;cedula_supervisor;valor_contrato;numero_pagos;cuenta;pago_mensual;pago_real;numero_egreso;adicion_contrato;observaciones\nJUAN PEREZ;1121932522;270-2026;2026-03-02;2026-07-01;https://secop...;1234;5678;SUPERVISOR UNO;987654;50000000;4;1;12500000;12500000;EG-12345;0;PAGO NORMAL\n"); }
+
+        function descargarDatosFiltrados() {
+            if(datosFiltradosActual.length === 0) { mostrarAlerta("No hay registros.", "error"); return; }
+            let csv = "ID;CONTRATO;CDP;RP;FECHA_INICIO;FECHA_FIN;SECOP;DOCUMENTO;NOMBRE;V_CONTRATO;N_PAGOS;ADICION;CUENTA;PAGO_MES;PAGO_REAL;EGRESO;SUPERVISOR;CC_SUPERVISOR;OBSERVACIONES\n";
+            datosFiltradosActual.forEach(d => { csv += `"${d.id}";"${d.contrato}";"${d.numero_cdp||''}";"${d.numero_rp||''}";"${d.fecha_inicio_contrato||''}";"${d.fecha_terminacion_contrato||''}";"${d.link_secop||''}";"${d.numero_documento}";"${d.nombre_completo}";"${d.valor_contrato}";"${d.numero_pagos}";"${d.adicion_contrato}";"${d.cuenta}";"${d.pago_mensual}";"${d.pago_real}";"${d.numero_egreso||''}";"${d.nombre_supervisor||''}";"${d.cedula_supervisor||''}";"${String(d.observaciones||'').replace(/"/g, '""')}"\n`; });
+            exportarCSV("Reporte_Pagos_Filtrado.csv", csv);
         }
 
         async function subirCSV() {
