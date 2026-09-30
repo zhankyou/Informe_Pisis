@@ -40,6 +40,33 @@ const matricesBase = {
         { item: 13, pct: 2, meta: 1 }, { item: 14, pct: 3, meta: 1 }, { item: 15, pct: 5, meta: 1 },
         { item: 16, pct: 3, meta: 1 }, { item: 17, pct: 3, meta: 1 }, { item: 18, pct: 3, meta: 1 },
         { item: 19, pct: 2, meta: 1 }, { item: 20, pct: 0, meta: 1 }, { item: 21, pct: 1, meta: 1 }
+    ],
+    'TERAPIA_RESPIRATORIA': [
+        { item: 1, pct: 3, meta: 1 }, { item: 2, pct: 3, meta: 1 }, { item: 3, pct: 5, meta: 1 },
+        { item: 4, pct: 5, meta: 1 }, { item: 5, pct: 1, meta: 1 }, { item: 6, pct: 15, meta: 1 },
+        { item: 7, pct: 10, meta: 1 }, { item: 8, pct: 13, meta: 1 }, { item: 9, pct: 10, meta: 1 },
+        { item: 10, pct: 5, meta: 1 }, { item: 11, pct: 4, meta: 1 }, { item: 12, pct: 6, meta: 1 },
+        { item: 13, pct: 5, meta: 1 }, { item: 14, pct: 5, meta: 1 }, { item: 15, pct: 5, meta: 1 },
+        { item: 16, pct: 1, meta: 1 }, { item: 17, pct: 3, meta: 1 }, { item: 18, pct: 0, meta: 1 },
+        { item: 19, pct: 1, meta: 1 }
+    ],
+    'FISIOTERAPIA': [
+        { item: 1, pct: 3, meta: 1 }, { item: 2, pct: 3, meta: 1 }, { item: 3, pct: 5, meta: 1 },
+        { item: 4, pct: 5, meta: 1 }, { item: 5, pct: 1, meta: 1 }, { item: 6, pct: 15, meta: 1 },
+        { item: 7, pct: 10, meta: 1 }, { item: 8, pct: 13, meta: 1 }, { item: 9, pct: 10, meta: 1 },
+        { item: 10, pct: 5, meta: 1 }, { item: 11, pct: 4, meta: 1 }, { item: 12, pct: 6, meta: 1 },
+        { item: 13, pct: 5, meta: 1 }, { item: 14, pct: 5, meta: 1 }, { item: 15, pct: 5, meta: 1 },
+        { item: 16, pct: 1, meta: 1 }, { item: 17, pct: 3, meta: 1 }, { item: 18, pct: 0, meta: 1 },
+        { item: 19, pct: 1, meta: 1 }
+    ],
+    'NUTRICION': [
+        { item: 1, pct: 3, meta: 1 }, { item: 2, pct: 3, meta: 1 }, { item: 3, pct: 5, meta: 1 },
+        { item: 4, pct: 5, meta: 1 }, { item: 5, pct: 1, meta: 1 }, { item: 6, pct: 8, meta: 1 },
+        { item: 7, pct: 15, meta: 1 }, { item: 8, pct: 15, meta: 1 }, { item: 9, pct: 10, meta: 1 },
+        { item: 10, pct: 5, meta: 1 }, { item: 11, pct: 4, meta: 1 }, { item: 12, pct: 6, meta: 1 },
+        { item: 13, pct: 5, meta: 1 }, { item: 14, pct: 5, meta: 1 }, { item: 15, pct: 5, meta: 1 },
+        { item: 16, pct: 1, meta: 1 }, { item: 17, pct: 3, meta: 1 }, { item: 18, pct: 0, meta: 1 },
+        { item: 19, pct: 1, meta: 1 }
     ]
 };
 
@@ -47,7 +74,7 @@ function setCategoria(cat, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     categoriaActual = cat;
-    document.getElementById('lbl-cat').textContent = cat;
+    document.getElementById('lbl-cat').textContent = cat.replace('_', ' ');
     limpiarFormulario();
     cargarTabla();
 }
@@ -218,7 +245,6 @@ function limpiarFormulario() {
 }
 
 function imprimirComprobante() {
-    // 1. Extraer datos del UI
     const vNombre = document.getElementById('nombre_completo').value || '---';
     const vDoc = document.getElementById('numero_documento').value || '---';
     const vContrato = document.getElementById('numero_contrato').value || '---';
@@ -227,8 +253,7 @@ function imprimirComprobante() {
     const vFin = document.getElementById('fecha_fin').value || '---';
     const vObs = document.getElementById('observaciones').value || 'Sin observaciones registradas.';
 
-    // 2. Inyectar al Template Oculto
-    document.getElementById('pt-cat').textContent = categoriaActual;
+    document.getElementById('pt-cat').textContent = categoriaActual.replace('_', ' ');
     document.getElementById('pt-nombre').textContent = vNombre;
     document.getElementById('pt-doc').textContent = vDoc;
     document.getElementById('pt-contrato').textContent = vContrato;
@@ -244,7 +269,6 @@ function imprimirComprobante() {
     document.getElementById('pt-tot-pct').textContent = document.getElementById('tot-porcentaje').textContent + '%';
     document.getElementById('pt-tot-cobro').textContent = document.getElementById('tot-cobro').textContent;
 
-    // 3. Llenar la Tabla
     const tbMatriz = document.getElementById('tbody-matriz');
     const ptTbody = document.getElementById('pt-tbody');
     ptTbody.innerHTML = '';
@@ -269,7 +293,6 @@ function imprimirComprobante() {
         `;
     });
 
-    // 4. Lanzar la ventana de Impresión Nativa (Navegador)
     window.print();
 }
 
@@ -283,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Navegación Vertical
     document.getElementById('tbody-matriz').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
